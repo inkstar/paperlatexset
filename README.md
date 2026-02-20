@@ -5,6 +5,11 @@
 - 前端（Vite + React）
 - 后端（Express + Prisma + PostgreSQL + MinIO）
 
+## 项目文档
+
+- 产品需求：`PRD.md`
+- 实施计划：`PLAN.md`
+
 ## 本地开发
 
 ### 1) 准备环境变量
