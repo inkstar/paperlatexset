@@ -114,6 +114,24 @@ export default function App() {
     }
   }, []);
 
+  useEffect(() => {
+    const payload = {
+      path: window.location.pathname + window.location.search,
+      referrer: document.referrer || null,
+      userAgent: navigator.userAgent,
+      openedAt: new Date().toISOString(),
+    };
+
+    fetch('/api/client-events/open', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    }).catch(() => {
+      // Ignore logging failures in UI flow.
+    });
+  }, []);
+
   // Sync default header title based on questions sources
   useEffect(() => {
     if (questions.length > 0) {

@@ -4,6 +4,8 @@ import { env } from './config/env';
 import { prisma } from './db/prisma';
 import { scheduleDailyMetrics } from './jobs/dailyMetricsJob';
 import { authMiddleware } from './middleware/auth';
+import { requestLogger } from './middleware/requestLogger';
+import { clientEventsRouter } from './routes/clientEvents';
 import { paperSetsRouter } from './routes/paperSets';
 import { papersRouter } from './routes/papers';
 import { providersRouter } from './routes/providers';
@@ -17,6 +19,7 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(authMiddleware);
+app.use(requestLogger);
 
 app.get('/api/health', (_req, res) => {
   res.json({ data: { ok: true, now: new Date().toISOString() }, error: null });
@@ -27,6 +30,7 @@ app.use('/api/papers', papersRouter);
 app.use('/api/questions', questionsRouter);
 app.use('/api/papersets', paperSetsRouter);
 app.use('/api/reports', reportsRouter);
+app.use('/api/client-events', clientEventsRouter);
 app.use('/api', recognitionRouter);
 
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

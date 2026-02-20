@@ -3,19 +3,29 @@ import { GeminiProvider } from './providers/geminiProvider';
 import { GlmProvider } from './providers/glmProvider';
 import { RecognitionProvider } from './providers/types';
 
-const providers: Record<string, RecognitionProvider> = {
-  gemini: new GeminiProvider(),
-  glm: new GlmProvider(),
+const providerFactories: Record<'gemini' | 'glm', () => RecognitionProvider> = {
+  gemini: () => new GeminiProvider(),
+  glm: () => new GlmProvider(),
 };
+const providerCache: Partial<Record<'gemini' | 'glm', RecognitionProvider>> = {};
 let defaultProviderName: 'gemini' | 'glm' = env.DEFAULT_PROVIDER;
 
 export function getProvider(providerName?: string): RecognitionProvider {
-  const selected = providerName || defaultProviderName;
-  const provider = providers[selected];
-  if (!provider) {
+  const selected = (providerName || defaultProviderName) as 'gemini' | 'glm';
+  const factory = providerFactories[selected];
+  if (!factory) {
     throw new Error(`Unsupported provider: ${selected}`);
   }
-  return provider;
+
+  const isEnabled = selected === 'gemini' ? !!env.GEMINI_API_KEY : !!env.GLM_API_KEY;
+  if (!isEnabled) {
+    throw new Error(`Provider "${selected}" is not configured. Please set API key in .env.server`);
+  }
+
+  if (!providerCache[selected]) {
+    providerCache[selected] = factory();
+  }
+  return providerCache[selected]!;
 }
 
 export function listProviders() {
@@ -40,7 +50,7 @@ export function getDefaultProviderName() {
 }
 
 export function setDefaultProviderName(next: 'gemini' | 'glm') {
-  if (!providers[next]) {
+  if (!providerFactories[next]) {
     throw new Error(`Unsupported provider: ${next}`);
   }
   defaultProviderName = next;

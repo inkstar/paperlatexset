@@ -45,6 +45,30 @@ npm run dev
 - 前端：`http://localhost:3000`
 - 后端：`http://localhost:3100`
 
+## 日志目录
+
+- 项目根目录固定使用 `logs/`
+- 访问日志：`logs/access-YYYY-MM-DD.log`
+- 浏览器打开事件日志：`logs/client-event-YYYY-MM-DD.log`
+
+> 说明：日志由后端写入，所以需要后端服务处于运行状态。
+
+## preview 常见报错（ECONNREFUSED）
+
+`npm run preview` 只启动前端预览服务器（默认 `4173`），当前端请求 `/api/*` 时会代理到后端 `3100`。  
+如果后端没启动，就会出现你看到的：
+
+- `[vite] http proxy error: /api/...`
+- `AggregateError [ECONNREFUSED]`
+
+解决方式：另开一个终端启动后端服务（或直接用 `npm run dev` 一起启动）。
+
+也可以直接使用：
+
+```bash
+npm run preview:full
+```
+
 ## 核心能力
 
 - 上传 PDF/图片并识别题目

@@ -8,6 +8,26 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-21 06:14] Phase 1.2 运行日志与页面打开事件记录
+- 目标
+  - 在项目根目录固定维护 `logs/` 目录。
+  - 每次页面打开时写入客户端事件日志；每次 API 请求写入访问日志。
+- 改动文件
+  - `.gitignore`
+  - `logs/.gitkeep`
+  - `server/src/middleware/requestLogger.ts`
+  - `server/src/routes/clientEvents.ts`
+  - `server/src/index.ts`
+  - `App.tsx`
+  - `README.md`
+- 验收标准
+  - 打开网页后，`logs/client-event-YYYY-MM-DD.log` 有新增记录。
+  - 请求任意 API 后，`logs/access-YYYY-MM-DD.log` 有新增记录。
+  - `preview` 场景下文档能解释 `ECONNREFUSED` 成因与处理方式。
+- 风险与回滚
+  - 风险：日志写入频率高时影响 I/O 性能。
+  - 回滚：临时下线 `requestLogger` 中间件，仅保留客户端关键事件日志。
+
 ### [UTC+8 2026-02-21 04:20] Phase 1.1 网页端 LaTeX 渲染增强（KaTeX）
 - 目标
   - 在右侧输出区新增“公式预览”能力，保留源码视图。
