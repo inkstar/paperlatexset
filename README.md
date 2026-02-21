@@ -46,6 +46,19 @@ npm run dev
 - 前端：`http://localhost:3000`
 - 后端：`http://localhost:3100`
 
+### 5) 一键 smoke 验证（可选）
+
+```bash
+npm run smoke
+```
+
+会自动验证：
+- `GET /api/health`
+- `POST /api/client-events/open`
+- `POST /api/parse-latex`（空输入错误码）
+- `POST /api/analyze`（无文件错误码）
+- 当日东八区日志文件写入
+
 ## 日志目录
 
 - 项目根目录固定使用 `logs/`
