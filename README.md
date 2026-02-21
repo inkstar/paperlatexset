@@ -58,6 +58,8 @@ npm run smoke
 
 会自动验证：
 - `GET /api/health`
+- `GET /api/v1/health`
+- `GET /api/v1/me`
 - `POST /api/client-events/open`
 - `POST /api/parse-latex`（空输入错误码）
 - `POST /api/analyze`（无文件错误码）
@@ -140,3 +142,4 @@ npm run preview:full
 > - `POST /api/v1/papers/upload`
 > - `POST /api/v1/papers/:id/recognize`
 > - `GET /api/v1/stats`
+> - `GET /api/v1/me`

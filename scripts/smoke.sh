@@ -47,6 +47,18 @@ fi
 echo "[smoke] PASS: health reachable"
 curl -fsS "$API_BASE/api/health" >/tmp/smoke-health.json
 
+curl -fsS "$API_BASE/api/v1/health" >/tmp/smoke-v1-health.json
+echo "[smoke] PASS: v1 health reachable"
+
+ME_RESP="$(curl -sS "$API_BASE/api/v1/me")"
+if echo "$ME_RESP" | rg -q '"id":"dev-teacher-id"'; then
+  echo "[smoke] PASS: v1 me reachable"
+else
+  echo "[smoke] FAIL: v1 me response unexpected"
+  echo "$ME_RESP"
+  exit 1
+fi
+
 curl -fsS -X POST "$API_BASE/api/client-events/open" \
   -H 'Content-Type: application/json' \
   -d '{"path":"/smoke","source":"smoke-script"}' >/tmp/smoke-open.json

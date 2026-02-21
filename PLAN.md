@@ -8,6 +8,24 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-22 04:25] Phase 1.7 M3 鉴权自检端点与 smoke 扩展
+- 目标
+  - 提供不依赖数据库的鉴权自检端点，快速确认 JWT 用户映射是否正常。
+  - 将 M3 新入口纳入 smoke 检查，降低后续回归遗漏。
+- 改动文件
+  - `server/src/routes/authInfo.ts`
+  - `server/src/index.ts`
+  - `scripts/smoke.sh`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - 可访问 `GET /api/v1/health` 与 `GET /api/v1/me`。
+  - `npm run smoke` 输出包含 v1 health 与 v1 me PASS。
+  - 现有日志与识别兼容接口检查不回归。
+- 风险与回滚
+  - 风险：后续关闭 dev fallback 时，smoke 依赖默认身份将失效。
+  - 回滚：给 smoke 增加可选 Bearer token 参数，或在 CI 中保留 dev fallback 专用配置。
+
 ### [UTC+8 2026-02-22 04:14] Phase 1.6 M3 首步：Supabase JWT 与 API v1 入口
 - 目标
   - 接入 Supabase Bearer JWT 校验路径，并保留可配置开发回退。
