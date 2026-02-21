@@ -7,16 +7,20 @@ cd "$ROOT_DIR"
 API_BASE="http://localhost:3100"
 STARTED_BY_SCRIPT=0
 SERVER_PID=""
+AUTO_START="${SMOKE_AUTO_START:-0}"
 
 beijing_date() {
   TZ=Asia/Shanghai date +%F
 }
 
 wait_for_server() {
-  local retries=30
+  local retries=60
   while [ "$retries" -gt 0 ]; do
     if curl -fsS "$API_BASE/api/health" >/dev/null 2>&1; then
       return 0
+    fi
+    if [ "$STARTED_BY_SCRIPT" -eq 1 ] && [ -n "$SERVER_PID" ] && ! kill -0 "$SERVER_PID" >/dev/null 2>&1; then
+      return 1
     fi
     retries=$((retries - 1))
     sleep 1
@@ -33,13 +37,18 @@ cleanup() {
 trap cleanup EXIT
 
 if ! curl -fsS "$API_BASE/api/health" >/dev/null 2>&1; then
-  echo "[smoke] backend not reachable, starting server..."
-  npm run server:start >/tmp/paperlatexset-smoke-server.log 2>&1 &
-  SERVER_PID="$!"
-  STARTED_BY_SCRIPT=1
-  if ! wait_for_server; then
-    echo "[smoke] FAIL: server did not become ready"
-    sed -n '1,120p' /tmp/paperlatexset-smoke-server.log || true
+  if [ "$AUTO_START" = "1" ]; then
+    echo "[smoke] backend not reachable, starting server..."
+    npm run server:start >/tmp/paperlatexset-smoke-server.log 2>&1 &
+    SERVER_PID="$!"
+    STARTED_BY_SCRIPT=1
+    if ! wait_for_server; then
+      echo "[smoke] FAIL: server did not become ready"
+      sed -n '1,120p' /tmp/paperlatexset-smoke-server.log || true
+      exit 1
+    fi
+  else
+    echo "[smoke] FAIL: backend not reachable at $API_BASE (start server first, or run with SMOKE_AUTO_START=1)"
     exit 1
   fi
 fi

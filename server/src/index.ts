@@ -53,7 +53,10 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 const server = app.listen(env.PORT, () => {
   console.log(`Server listening on http://localhost:${env.PORT}`);
   ensureBucket().catch((error) => {
-    console.error('Failed to ensure MinIO bucket', error);
+    const reason = error instanceof Error ? error.message : String(error);
+    console.error(
+      `MinIO is not reachable (${env.MINIO_ENDPOINT}:${env.MINIO_PORT}). Upload/recognize routes may fail until storage is available. Reason: ${reason}`,
+    );
   });
   scheduleDailyMetrics();
 });

@@ -56,6 +56,12 @@ npm run dev
 npm run smoke
 ```
 
+默认要求后端已启动（`npm run dev` 或 `npm run server:start`）。
+如果希望脚本自动尝试拉起后端，可用：
+```bash
+SMOKE_AUTO_START=1 npm run smoke
+```
+
 会自动验证：
 - `GET /api/health`
 - `GET /api/v1/health`
@@ -90,6 +96,10 @@ npm run preview:full
 ```
 
 如果后端启动时报端口占用（`EADDRINUSE`），先释放 `3100` 端口再重启。
+
+如果启动日志提示 `MinIO is not reachable`，说明对象存储未连接：
+- `POST /api/analyze`、`POST /api/parse-latex` 仍可用。
+- 上传与入库识别链路（如 `/api/papers/upload`、`/api/papers/:id/recognize`）会失败，需先启动/修正 MinIO。
 
 ## 错误码排查（M1）
 
