@@ -14,17 +14,29 @@ recognitionRouter.post(
   upload.array('files', 50),
   asyncHandler(async (req, res) => {
     const files = (req.files || []) as Express.Multer.File[];
-    if (files.length === 0) return fail(res, 400, 'No files uploaded');
-    const provider = getProvider((req.body.provider as string) || undefined);
+    if (files.length === 0) return fail(res, 400, 'No files uploaded', 'NO_FILES');
 
-    const result = await provider.recognizeFromFiles(
-      files.map((f) => ({
-        mimeType: f.mimetype,
-        dataBase64: f.buffer.toString('base64'),
-      })),
-    );
+    let provider;
+    try {
+      provider = getProvider((req.body.provider as string) || undefined);
+    } catch (error: any) {
+      const msg = error?.message || 'Provider is not available';
+      return fail(res, 400, msg, 'PROVIDER_NOT_CONFIGURED');
+    }
 
-    return ok(res, { questions: result.questions, provider: provider.name, usage: result.usage });
+    try {
+      const result = await provider.recognizeFromFiles(
+        files.map((f) => ({
+          mimeType: f.mimetype,
+          dataBase64: f.buffer.toString('base64'),
+        })),
+      );
+
+      return ok(res, { questions: result.questions, provider: provider.name, usage: result.usage });
+    } catch (error: any) {
+      const msg = error?.message || 'Provider request failed';
+      return fail(res, 502, msg, 'PROVIDER_REQUEST_FAILED');
+    }
   }),
 );
 
@@ -33,9 +45,22 @@ recognitionRouter.post(
   requireRole([UserRole.admin, UserRole.teacher]),
   asyncHandler(async (req, res) => {
     const latexCode = String(req.body.latexCode || '');
-    if (!latexCode.trim()) return fail(res, 400, 'latexCode is required');
-    const provider = getProvider((req.body.provider as string) || undefined);
-    const result = await provider.parseLatex(latexCode);
-    return ok(res, { questions: result.questions, provider: provider.name, usage: result.usage });
+    if (!latexCode.trim()) return fail(res, 400, 'latexCode is required', 'LATEX_REQUIRED');
+
+    let provider;
+    try {
+      provider = getProvider((req.body.provider as string) || undefined);
+    } catch (error: any) {
+      const msg = error?.message || 'Provider is not available';
+      return fail(res, 400, msg, 'PROVIDER_NOT_CONFIGURED');
+    }
+
+    try {
+      const result = await provider.parseLatex(latexCode);
+      return ok(res, { questions: result.questions, provider: provider.name, usage: result.usage });
+    } catch (error: any) {
+      const msg = error?.message || 'Provider request failed';
+      return fail(res, 502, msg, 'PROVIDER_REQUEST_FAILED');
+    }
   }),
 );

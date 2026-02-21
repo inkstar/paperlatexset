@@ -8,6 +8,85 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-22 02:29] Phase 1.4 主链路错误码与日志可追踪增强
+- 目标
+  - 完成阶段B/C：识别链路失败可诊断，日志具备请求追踪能力。
+  - 保持兼容接口不变（`/api/analyze`、`/api/parse-latex`）。
+- 改动文件
+  - `services/geminiService.ts`
+  - `App.tsx`
+  - `server/src/routes/recognition.ts`
+  - `server/src/utils/http.ts`
+  - `server/src/middleware/requestLogger.ts`
+  - `server/src/routes/clientEvents.ts`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - 后端识别失败返回 `errorCode` 且保留 `error`。
+  - 前端按错误码输出可执行提示（后端不可达/provider 未配置/provider 请求失败）。
+  - 访问日志包含 `requestId`、`eventType`、`errorCode`，客户端事件日志包含关联 `requestId`。
+- 风险与回滚
+  - 风险：新增错误码字段影响旧端解析。
+  - 回滚：保持 `error` 文本兼容，前端回退到旧兜底文案。
+
+### [UTC+8 2026-02-22 02:27] 整体路线总览（M0-M4）与未来4小时执行窗
+- 目标
+  - 固化项目整体路线：M0 基线、M1 主链路、M2 体验质量、M3 鉴权平台化、M4 运维报表。
+  - 锁定未来4小时连续执行窗口，避免中断在讨论态。
+- 改动文件
+  - `PLAN.md`
+  - `README.md`
+- 验收标准
+  - `PLAN.md` 顶部包含 M0-M4 总览与分时执行窗（A/B/C 阶段）。
+  - `README.md` 可直接定位计划入口和当前执行阶段。
+  - 既有历史条目完整保留。
+- 风险与回滚
+  - 风险：计划粒度不足导致执行中反复决策。
+  - 回滚：补充每阶段“接口变更、测试、回滚动作”到同一条计划中，不拆散历史。
+
+### [UTC+8 2026-02-22 02:27] 未来4小时执行窗口（连续实施）
+- 目标
+  - 阶段A（0-1h）：收口当前改动并发布，清理 git 锁残留风险。
+  - 阶段B（1-3h）：主链路错误可诊断（网络/后端/provider/识别失败）。
+  - 阶段C（3-4h）：日志质量增强（requestId、errorCode、eventType）与去噪。
+- 改动文件
+  - `App.tsx`
+  - `services/geminiService.ts`
+  - `server/src/services/providerService.ts`
+  - `server/src/routes/recognition.ts`
+  - `server/src/middleware/requestLogger.ts`
+  - `server/src/routes/clientEvents.ts`
+  - `server/src/utils/http.ts`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - `git status` 仅保留可预期未跟踪项（如 `package-lock.json`）。
+  - 识别失败返回含稳定 `errorCode`，前端提示可执行。
+  - 日志可回答“谁/何时/接口/结果/失败原因”。
+- 风险与回滚
+  - 风险：错误码改造影响旧逻辑或日志解析。
+  - 回滚：保留兼容字段 `error`，新增字段可选，不删除旧日志字段。
+
+### [UTC+8 2026-02-22 02:14] Phase 1.3 日志去重与启动稳定性增强
+- 目标
+  - 避免同一浏览器标签页重复写入 `page_open` 事件。
+  - 后端端口冲突时输出明确错误信息并快速失败退出。
+- 改动文件
+  - `App.tsx`
+  - `server/src/index.ts`
+  - `PLAN.md`
+- 验收标准
+  - 同一标签页刷新前，`page_open` 日志最多写入一次。
+  - 端口被占用时启动日志明确提示 `EADDRINUSE` 处理建议。
+  - 正常情况下服务启动流程不回归。
+- 风险与回滚
+  - 风险：会话去重导致极端场景漏记一次打开事件。
+  - 回滚：去掉 sessionStorage 去重逻辑，恢复每次挂载均上报。
+- 执行清单（进行中）
+  - [x] 同标签页 `page_open` 去重逻辑
+  - [x] `EADDRINUSE` 明确提示
+  - [ ] 提交并推送阶段改动
+
 ### [UTC+8 2026-02-21 06:14] Phase 1.2 运行日志与页面打开事件记录
 - 目标
   - 在项目根目录固定维护 `logs/` 目录。

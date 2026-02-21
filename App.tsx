@@ -42,7 +42,7 @@ import {
 } from 'lucide-react';
 
 import { UploadedFile, ProcessingStatus, HistoryRecord, QuestionItem, StyleSettings } from './types';
-import { analyzeExam, parseLatexToQuestions } from './services/geminiService';
+import { ApiError, analyzeExam, parseLatexToQuestions } from './services/geminiService';
 import { SortableFileItem } from './components/SortableFileItem';
 import { LatexOutput } from './components/LatexOutput';
 import { HistoryPanel } from './components/HistoryPanel';
@@ -51,6 +51,23 @@ import { PREAMBLE_TEMPLATE } from './constants';
 import { ComposerPage } from './components/ComposerPage';
 
 const uid = () => Math.random().toString(36).substring(2, 9);
+
+function getFriendlyErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof ApiError) {
+    if (error.code === 'BACKEND_UNREACHABLE') {
+      return '无法连接后端服务。请先启动后端（默认端口 3100），或执行 npm run dev / npm run preview:full。';
+    }
+    if (error.code === 'PROVIDER_NOT_CONFIGURED') {
+      return '识别模型未配置。请在 .env.server 中配置 Gemini/GLM 的 API Key，或切换已配置的 provider。';
+    }
+    if (error.code === 'PROVIDER_REQUEST_FAILED') {
+      return `模型请求失败：${error.message}`;
+    }
+    if (error.message) return error.message;
+  }
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+}
 
 const CHANGELOG = [
   {
@@ -115,6 +132,11 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const openLogKey = 'page_open_logged_v1';
+    if (sessionStorage.getItem(openLogKey) === '1') {
+      return;
+    }
+
     const payload = {
       path: window.location.pathname + window.location.search,
       referrer: document.referrer || null,
@@ -127,9 +149,13 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
       keepalive: true,
-    }).catch(() => {
-      // Ignore logging failures in UI flow.
-    });
+    })
+      .then(() => {
+        sessionStorage.setItem(openLogKey, '1');
+      })
+      .catch(() => {
+        // Ignore logging failures in UI flow.
+      });
   }, []);
 
   // Sync default header title based on questions sources
@@ -248,8 +274,8 @@ export default function App() {
       setQuestions(prev => appendMode ? [...prev, ...parsed] : parsed);
       setShowImportModal(false);
       setImportText('');
-    } catch (e: any) {
-      setErrorMessage("无法解析 LaTeX 代码。");
+    } catch (error: unknown) {
+      setErrorMessage(getFriendlyErrorMessage(error, '无法解析 LaTeX 代码。'));
     } finally {
       setIsImporting(false);
     }
@@ -283,9 +309,9 @@ export default function App() {
         latex: generatedLatex,
         options: { sortByType, keepOriginalNumbers, enableTikz: false, style }
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setStatus(ProcessingStatus.ERROR);
-      setErrorMessage(error.message || "分析试卷时发生错误。");
+      setErrorMessage(getFriendlyErrorMessage(error, '分析试卷时发生错误。'));
     }
   };
 

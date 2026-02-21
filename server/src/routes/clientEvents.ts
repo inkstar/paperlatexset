@@ -13,6 +13,8 @@ clientEventsRouter.post(
     const payload = req.body && typeof req.body === 'object' ? req.body : {};
 
     await writeClientEventLog('page_open', {
+      eventType: 'client_page_open',
+      requestId: (res.locals as any).requestId || null,
       userId: req.user?.id || null,
       role: req.user?.role || null,
       userEmail: req.user?.email || null,

@@ -9,6 +9,7 @@
 
 - 产品需求：`PRD.md`
 - 实施计划：`PLAN.md`
+- 当前执行阶段：`PLAN.md` 顶部最新条目（M1/M2 连续实施）
 
 ## 本地开发
 
@@ -68,6 +69,24 @@ npm run dev
 ```bash
 npm run preview:full
 ```
+
+如果后端启动时报端口占用（`EADDRINUSE`），先释放 `3100` 端口再重启。
+
+## 错误码排查（M1）
+
+- `BACKEND_UNREACHABLE`
+  - 含义：前端无法连接后端。
+  - 处理：启动后端（`npm run dev` 或 `npm run preview:full`），确认 `3100` 端口可访问。
+
+- `PROVIDER_NOT_CONFIGURED`
+  - 含义：当前识别 provider 未配置 API key。
+  - 处理：在 `.env.server` 配置对应 `GEMINI_API_KEY` 或 `GLM_API_KEY`，重启后端。
+
+- `PROVIDER_REQUEST_FAILED`
+  - 含义：已连接 provider，但请求失败（限流/网络/参数）。
+  - 处理：查看后端日志与返回错误信息，必要时切换 provider 重试。
+
+提示：后端响应头会返回 `x-request-id`，可用于在 `logs/access-YYYY-MM-DD.log` 中定位同一请求。
 
 ## 核心能力
 

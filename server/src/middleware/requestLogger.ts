@@ -5,6 +5,10 @@ import type { NextFunction, Request, Response } from 'express';
 const logsDir = path.resolve(process.cwd(), 'logs');
 const TZ = 'Asia/Shanghai';
 
+function createRequestId() {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function getBeijingDateKey(date: Date) {
   return new Intl.DateTimeFormat('sv-SE', {
     timeZone: TZ,
@@ -52,11 +56,16 @@ export async function writeClientEventLog(event: string, payload: Record<string,
 
 export function requestLogger(req: Request, res: Response, next: NextFunction) {
   const start = Date.now();
+  const requestId = createRequestId();
+  (res.locals as any).requestId = requestId;
+  res.setHeader('x-request-id', requestId);
 
   res.on('finish', () => {
     const now = new Date();
     const durationMs = Date.now() - start;
     const line = JSON.stringify({
+      eventType: 'http_access',
+      requestId,
       ts: getBeijingTimestamp(now),
       method: req.method,
       path: req.originalUrl,
@@ -66,6 +75,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
       userAgent: req.get('user-agent') || '',
       userId: req.user?.id || null,
       role: req.user?.role || null,
+      errorCode: (res.locals as any).errorCode || null,
     });
 
     void appendLine(getLogFileName('access'), line).catch((error) => {

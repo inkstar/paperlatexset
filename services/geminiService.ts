@@ -1,26 +1,68 @@
 import { UploadedFile, QuestionItem } from '../types';
 
+export class ApiError extends Error {
+  code?: string;
+  status?: number;
+  details?: Record<string, unknown> | null;
+
+  constructor(message: string, opts?: { code?: string; status?: number; details?: Record<string, unknown> | null }) {
+    super(message);
+    this.name = 'ApiError';
+    this.code = opts?.code;
+    this.status = opts?.status;
+    this.details = opts?.details || null;
+  }
+}
+
+async function parseResponseJson(res: Response) {
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 async function postForm<T>(url: string, formData: FormData): Promise<T> {
-  const res = await fetch(url, {
-    method: 'POST',
-    body: formData,
-  });
-  const json = await res.json();
-  if (!res.ok || json.error) {
-    throw new Error(json.error || 'Request failed');
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      body: formData,
+    });
+  } catch {
+    throw new ApiError('无法连接后端服务，请确认后端已启动（默认 3100 端口）。', { code: 'BACKEND_UNREACHABLE' });
+  }
+
+  const json = await parseResponseJson(res);
+  if (!res.ok || json?.error) {
+    throw new ApiError(json?.error || 'Request failed', {
+      code: json?.errorCode || `HTTP_${res.status}`,
+      status: res.status,
+      details: json?.details || null,
+    });
   }
   return json.data as T;
 }
 
 async function postJson<T>(url: string, body: unknown): Promise<T> {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const json = await res.json();
-  if (!res.ok || json.error) {
-    throw new Error(json.error || 'Request failed');
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new ApiError('无法连接后端服务，请确认后端已启动（默认 3100 端口）。', { code: 'BACKEND_UNREACHABLE' });
+  }
+
+  const json = await parseResponseJson(res);
+  if (!res.ok || json?.error) {
+    throw new ApiError(json?.error || 'Request failed', {
+      code: json?.errorCode || `HTTP_${res.status}`,
+      status: res.status,
+      details: json?.details || null,
+    });
   }
   return json.data as T;
 }

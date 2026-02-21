@@ -47,6 +47,15 @@ const server = app.listen(env.PORT, () => {
   scheduleDailyMetrics();
 });
 
+server.on('error', (error: any) => {
+  if (error?.code === 'EADDRINUSE') {
+    console.error(`Port ${env.PORT} is already in use. Stop the existing process or change PORT in .env.server.`);
+    process.exit(1);
+  }
+  console.error('Server startup failed', error);
+  process.exit(1);
+});
+
 process.on('SIGINT', async () => {
   await prisma.$disconnect();
   server.close(() => process.exit(0));
