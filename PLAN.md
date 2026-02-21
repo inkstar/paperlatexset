@@ -8,6 +8,26 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-22 04:14] Phase 1.6 M3 首步：Supabase JWT 与 API v1 入口
+- 目标
+  - 接入 Supabase Bearer JWT 校验路径，并保留可配置开发回退。
+  - 提供 `/api/v1/questions`、`/api/v1/papers`、`/api/v1/stats` 入口，保持旧接口兼容。
+- 改动文件
+  - `server/src/config/env.ts`
+  - `server/src/middleware/auth.ts`
+  - `server/src/routes/stats.ts`
+  - `server/src/index.ts`
+  - `.env.server.example`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - 设置 `SUPABASE_JWT_SECRET` 后可通过 Bearer token 解析用户身份与角色。
+  - 当 `AUTH_DEV_FALLBACK=false` 且 token 缺失/无效时返回 401 与稳定错误码。
+  - `/api/v1/questions`、`/api/v1/papers`、`/api/v1/stats` 可访问且不影响 `/api/*` 旧路径。
+- 风险与回滚
+  - 风险：不同 JWT claim 结构可能导致角色映射偏差。
+  - 回滚：保留 dev fallback，角色映射失败默认 `teacher`，必要时恢复仅开发 header 模式。
+
 ### [UTC+8 2026-02-22 03:56] Phase 1.5 自动化 smoke 验证脚本
 - 目标
   - 提供无 UI 依赖的一键主链路自检能力，降低回归成本。

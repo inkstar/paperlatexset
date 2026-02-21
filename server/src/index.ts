@@ -12,6 +12,7 @@ import { providersRouter } from './routes/providers';
 import { questionsRouter } from './routes/questions';
 import { recognitionRouter } from './routes/recognition';
 import { reportsRouter } from './routes/reports';
+import { statsRouter } from './routes/stats';
 import { ensureBucket } from './services/storageService';
 
 const app = express();
@@ -30,8 +31,13 @@ app.use('/api/papers', papersRouter);
 app.use('/api/questions', questionsRouter);
 app.use('/api/papersets', paperSetsRouter);
 app.use('/api/reports', reportsRouter);
+app.use('/api/stats', statsRouter);
 app.use('/api/client-events', clientEventsRouter);
 app.use('/api', recognitionRouter);
+
+app.use('/api/v1/papers', papersRouter);
+app.use('/api/v1/questions', questionsRouter);
+app.use('/api/v1/stats', statsRouter);
 
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);

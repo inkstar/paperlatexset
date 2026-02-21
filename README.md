@@ -9,7 +9,7 @@
 
 - 产品需求：`PRD.md`
 - 实施计划：`PLAN.md`
-- 当前执行阶段：`PLAN.md` 顶部最新条目（M1/M2 连续实施）
+- 当前执行阶段：`PLAN.md` 顶部最新条目（已进入 M3 第一步：鉴权与 API v1 入口）
 
 ## 本地开发
 
@@ -23,6 +23,10 @@
 
 - 复制 `/.env.server.example` 为 `/.env.server`
 - 填写 PostgreSQL、MinIO、Gemini/GLM API Key
+- 若启用 Supabase JWT：
+  - 设置 `AUTH_DEV_FALLBACK=false`
+  - 填写 `SUPABASE_JWT_SECRET`
+  - 可选填写 `SUPABASE_JWT_ISSUER`、`SUPABASE_JWT_AUDIENCE`
 
 ### 2) 安装依赖
 
@@ -115,6 +119,7 @@ npm run preview:full
 - `POST /api/papers/upload`
 - `POST /api/papers/:id/recognize`
 - `GET /api/questions`
+- `GET /api/stats`
 - `PATCH /api/questions/:id`
 - `POST /api/papersets`
 - `POST /api/papersets/:id/items/batch-select`
@@ -128,3 +133,10 @@ npm run preview:full
 >
 > - `POST /api/analyze`
 > - `POST /api/parse-latex`
+>
+> API v1 入口（M3）：
+>
+> - `GET /api/v1/questions`
+> - `POST /api/v1/papers/upload`
+> - `POST /api/v1/papers/:id/recognize`
+> - `GET /api/v1/stats`

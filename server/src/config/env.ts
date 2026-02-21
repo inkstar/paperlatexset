@@ -4,6 +4,10 @@ import { z } from 'zod';
 const envSchema = z.object({
   PORT: z.coerce.number().default(3100),
   JWT_SECRET: z.string().default('dev-secret'),
+  AUTH_DEV_FALLBACK: z.string().default('true').transform((v) => v === 'true'),
+  SUPABASE_JWT_SECRET: z.string().optional(),
+  SUPABASE_JWT_ISSUER: z.string().optional(),
+  SUPABASE_JWT_AUDIENCE: z.string().optional(),
   DATABASE_URL: z.string().min(1),
   MINIO_ENDPOINT: z.string().default('127.0.0.1'),
   MINIO_PORT: z.coerce.number().default(9000),
