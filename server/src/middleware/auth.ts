@@ -63,8 +63,10 @@ export function authMiddleware(req: Request, _res: Response, next: NextFunction)
 }
 
 function mapJwtPayload(payload: jwt.JwtPayload): AuthUser {
+  const roleByPath = getByPath(payload, env.SUPABASE_ROLE_CLAIM_PATH);
   const role =
     payload.role ||
+    roleByPath ||
     (payload.app_metadata as Record<string, unknown> | undefined)?.role ||
     (payload.user_metadata as Record<string, unknown> | undefined)?.role ||
     UserRole.teacher;
@@ -88,8 +90,23 @@ function normalizeRole(value: unknown): UserRole {
 export function requireRole(allowed: UserRole[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user || !allowed.includes(req.user.role)) {
-      return res.status(403).json({ data: null, error: 'Forbidden' });
+      return res.status(403).json({ data: null, error: 'Forbidden', errorCode: 'AUTH_FORBIDDEN' });
     }
     next();
   };
+}
+
+function getByPath(source: unknown, path: string): unknown {
+  if (!source || typeof source !== 'object') return undefined;
+  if (!path.trim()) return undefined;
+
+  let current: any = source;
+  for (const segment of path.split('.')) {
+    if (!segment) continue;
+    if (!current || typeof current !== 'object' || !(segment in current)) {
+      return undefined;
+    }
+    current = current[segment];
+  }
+  return current;
 }

@@ -20,8 +20,6 @@ const app = express();
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
-app.use(authMiddleware);
-app.use(requestLogger);
 
 app.get('/api/health', (_req, res) => {
   res.json({ data: { ok: true, now: new Date().toISOString() }, error: null });
@@ -29,6 +27,9 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/v1/health', (_req, res) => {
   res.json({ data: { ok: true, now: new Date().toISOString(), version: 'v1' }, error: null });
 });
+
+app.use(authMiddleware);
+app.use(requestLogger);
 
 app.use('/api/providers', providersRouter);
 app.use('/api/papers', papersRouter);

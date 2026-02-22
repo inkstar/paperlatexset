@@ -8,6 +8,7 @@ const envSchema = z.object({
   SUPABASE_JWT_SECRET: z.string().optional(),
   SUPABASE_JWT_ISSUER: z.string().optional(),
   SUPABASE_JWT_AUDIENCE: z.string().optional(),
+  SUPABASE_ROLE_CLAIM_PATH: z.string().default('app_metadata.role'),
   DATABASE_URL: z.string().min(1),
   MINIO_ENDPOINT: z.string().default('127.0.0.1'),
   MINIO_PORT: z.coerce.number().default(9000),

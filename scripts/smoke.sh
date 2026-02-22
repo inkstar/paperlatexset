@@ -9,6 +9,16 @@ STARTED_BY_SCRIPT=0
 SERVER_PID=""
 AUTO_START="${SMOKE_AUTO_START:-0}"
 
+curl_with_auth() {
+  curl "$@"
+}
+
+if [ -n "${SMOKE_BEARER_TOKEN:-}" ]; then
+  curl_with_auth() {
+    curl -H "Authorization: Bearer ${SMOKE_BEARER_TOKEN}" "$@"
+  }
+fi
+
 beijing_date() {
   TZ=Asia/Shanghai date +%F
 }
@@ -59,22 +69,30 @@ curl -fsS "$API_BASE/api/health" >/tmp/smoke-health.json
 curl -fsS "$API_BASE/api/v1/health" >/tmp/smoke-v1-health.json
 echo "[smoke] PASS: v1 health reachable"
 
-ME_RESP="$(curl -sS "$API_BASE/api/v1/me")"
-if echo "$ME_RESP" | rg -q '"id":"dev-teacher-id"'; then
-  echo "[smoke] PASS: v1 me reachable"
+ME_RESP="$(curl_with_auth -sS "$API_BASE/api/v1/me")"
+if [ -n "${SMOKE_BEARER_TOKEN:-}" ]; then
+  if echo "$ME_RESP" | rg -q '"id":"'; then
+    echo "[smoke] PASS: v1 me reachable with bearer token"
+  else
+    echo "[smoke] FAIL: v1 me bearer response unexpected"
+    echo "$ME_RESP"
+    exit 1
+  fi
+elif echo "$ME_RESP" | rg -q '"id":"dev-teacher-id"'; then
+  echo "[smoke] PASS: v1 me reachable (dev fallback)"
 else
   echo "[smoke] FAIL: v1 me response unexpected"
   echo "$ME_RESP"
   exit 1
 fi
 
-curl -fsS -X POST "$API_BASE/api/client-events/open" \
+curl_with_auth -fsS -X POST "$API_BASE/api/client-events/open" \
   -H 'Content-Type: application/json' \
   -d '{"path":"/smoke","source":"smoke-script"}' >/tmp/smoke-open.json
 
 echo "[smoke] PASS: client open event"
 
-PARSE_RESP="$(curl -sS -X POST "$API_BASE/api/parse-latex" -H 'Content-Type: application/json' -d '{"latexCode":""}')"
+PARSE_RESP="$(curl_with_auth -sS -X POST "$API_BASE/api/parse-latex" -H 'Content-Type: application/json' -d '{"latexCode":""}')"
 if echo "$PARSE_RESP" | rg -q '"errorCode":"LATEX_REQUIRED"'; then
   echo "[smoke] PASS: parse-latex returns LATEX_REQUIRED"
 else
@@ -83,7 +101,7 @@ else
   exit 1
 fi
 
-ANALYZE_RESP="$(curl -sS -X POST "$API_BASE/api/analyze")"
+ANALYZE_RESP="$(curl_with_auth -sS -X POST "$API_BASE/api/analyze")"
 if echo "$ANALYZE_RESP" | rg -q '"errorCode":"NO_FILES"'; then
   echo "[smoke] PASS: analyze returns NO_FILES"
 else

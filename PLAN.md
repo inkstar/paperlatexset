@@ -8,6 +8,56 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-22 08:25] Phase 2.2 健康检查公开化（严格鉴权兼容）
+- 目标
+  - 在 `AUTH_DEV_FALLBACK=false` 时保持健康检查可用，支持部署探活。
+  - 打通 `smoke:auth` 无 token 验证链路。
+- 改动文件
+  - `server/src/index.ts`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - `/api/health`、`/api/v1/health` 在严格鉴权模式下返回 200。
+  - `npm run smoke:auth` 可稳定校验 `AUTH_REQUIRED`。
+- 风险与回滚
+  - 风险：公开健康检查暴露服务存活信息。
+  - 回滚：仅在内网或网关层开放健康检查路径。
+
+### [UTC+8 2026-02-22 08:22] Phase 2.1 严格鉴权 smoke 专项脚本
+- 目标
+  - 提供独立的鉴权专项检查，覆盖 `AUTH_REQUIRED` 与 Bearer token 场景。
+  - 将“严格鉴权”与“通用主链路 smoke”解耦，减少联调时误判。
+- 改动文件
+  - `scripts/smoke-auth.sh`
+  - `package.json`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - `npm run smoke:auth` 在无 token 时能校验返回 `AUTH_REQUIRED`。
+  - 设置 `SMOKE_BEARER_TOKEN` 后可校验 `/api/v1/me` 鉴权成功。
+- 风险与回滚
+  - 风险：开发者混用 `smoke` 与 `smoke:auth` 导致理解偏差。
+  - 回滚：将 `smoke:auth` 合并回主 `smoke` 并保留开关注释。
+
+### [UTC+8 2026-02-22 08:11] Phase 2.0 M3 严格鉴权联调增强
+- 目标
+  - 完善 Supabase JWT 角色映射（支持自定义 claim 路径），降低不同项目 JWT 结构差异带来的联调成本。
+  - 增强鉴权失败可诊断性，并让 smoke 支持真实 Bearer token 验证。
+- 改动文件
+  - `server/src/config/env.ts`
+  - `server/src/middleware/auth.ts`
+  - `.env.server.example`
+  - `scripts/smoke.sh`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - 支持通过 `SUPABASE_ROLE_CLAIM_PATH` 指定角色字段路径（默认 `app_metadata.role`）。
+  - 权限不足返回稳定错误码 `AUTH_FORBIDDEN`。
+  - `SMOKE_BEARER_TOKEN=<token> npm run smoke` 可执行并验证 `/api/v1/me`。
+- 风险与回滚
+  - 风险：错误的 claim 路径会导致角色退化为 `teacher`。
+  - 回滚：清空 `SUPABASE_ROLE_CLAIM_PATH` 并依赖现有默认映射链路。
+
 ### [UTC+8 2026-02-22 04:36] Phase 1.9 smoke 启动策略稳态化
 - 目标
   - 解决无 TTY 场景下 `smoke` 自动拉起后端不稳定的问题。

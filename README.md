@@ -27,6 +27,7 @@
   - 设置 `AUTH_DEV_FALLBACK=false`
   - 填写 `SUPABASE_JWT_SECRET`
   - 可选填写 `SUPABASE_JWT_ISSUER`、`SUPABASE_JWT_AUDIENCE`
+  - 可选设置 `SUPABASE_ROLE_CLAIM_PATH`（默认 `app_metadata.role`）
 
 ### 2) 安装依赖
 
@@ -61,6 +62,10 @@ npm run smoke
 ```bash
 SMOKE_AUTO_START=1 npm run smoke
 ```
+如果要验证真实 Bearer token（如 Supabase access_token），可用：
+```bash
+SMOKE_BEARER_TOKEN='<your-access-token>' npm run smoke
+```
 
 会自动验证：
 - `GET /api/health`
@@ -70,6 +75,17 @@ SMOKE_AUTO_START=1 npm run smoke
 - `POST /api/parse-latex`（空输入错误码）
 - `POST /api/analyze`（无文件错误码）
 - 当日东八区日志文件写入
+
+当 `AUTH_DEV_FALLBACK=false` 时，请使用 `SMOKE_BEARER_TOKEN` 执行 smoke。
+
+严格鉴权专项验证（后端需以 `AUTH_DEV_FALLBACK=false` 启动）：
+```bash
+npm run smoke:auth
+```
+如果要同时验证有 token 场景：
+```bash
+SMOKE_BEARER_TOKEN='<your-access-token>' npm run smoke:auth
+```
 
 ## 日志目录
 
@@ -153,3 +169,4 @@ npm run preview:full
 > - `POST /api/v1/papers/:id/recognize`
 > - `GET /api/v1/stats`
 > - `GET /api/v1/me`
+> - `GET /api/v1/health`（公开探活，不要求 token）
