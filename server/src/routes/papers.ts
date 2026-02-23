@@ -21,7 +21,11 @@ papersRouter.post(
     const files = (req.files || []) as Express.Multer.File[];
     if (files.length === 0) return fail(res, 400, 'No files uploaded');
 
-    await ensureBucket();
+    try {
+      await ensureBucket();
+    } catch (error) {
+      return fail(res, 503, 'storage is unavailable. please check MinIO/S3 config.', 'STORAGE_UNAVAILABLE');
+    }
     await ensureUser({ id: req.user!.id, email: req.user!.email, role: req.user!.role });
 
     const title = (req.body.title as string) || `试卷-${new Date().toISOString().slice(0, 10)}`;
@@ -40,7 +44,11 @@ papersRouter.post(
     const fileRows = [];
     for (const file of files) {
       const objectKey = `papers/${paper.id}/${Date.now()}-${file.originalname}`;
-      await uploadBuffer(objectKey, file.buffer, file.mimetype);
+      try {
+        await uploadBuffer(objectKey, file.buffer, file.mimetype);
+      } catch {
+        return fail(res, 503, 'storage is unavailable. please check MinIO/S3 config.', 'STORAGE_UNAVAILABLE');
+      }
       const row = await prisma.paperFile.create({
         data: {
           paperId: paper.id,
@@ -71,10 +79,21 @@ papersRouter.post(
     if (!paper) return fail(res, 404, 'Paper not found');
     if (paper.files.length === 0) return fail(res, 400, 'Paper has no files');
 
-    const provider = await getProvider(providerName);
+    let provider;
+    try {
+      provider = await getProvider(providerName);
+    } catch (error: any) {
+      const msg = error?.message || 'Provider is not available';
+      return fail(res, 400, msg, 'PROVIDER_NOT_CONFIGURED');
+    }
     const files = await Promise.all(
       paper.files.map(async (f) => {
-        const buffer = await getObjectBuffer(f.objectKey);
+        let buffer: Buffer;
+        try {
+          buffer = await getObjectBuffer(f.objectKey);
+        } catch {
+          throw new Error('STORAGE_UNAVAILABLE');
+        }
         return {
           mimeType: f.mimeType,
           dataBase64: buffer.toString('base64'),
@@ -106,11 +125,15 @@ papersRouter.post(
             },
           });
 
-          const kp = await tx.knowledgePoint.upsert({
-            where: { name_parentId: { name: q.knowledgePoint || '未分类', parentId: null } },
-            create: { name: q.knowledgePoint || '未分类' },
-            update: {},
+          const kpName = q.knowledgePoint || '未分类';
+          const existingKp = await tx.knowledgePoint.findFirst({
+            where: { name: kpName, parentId: null },
           });
+          const kp =
+            existingKp ||
+            (await tx.knowledgePoint.create({
+              data: { name: kpName },
+            }));
 
           await tx.questionKnowledgePoint.create({
             data: {
@@ -139,6 +162,9 @@ papersRouter.post(
       return ok(res, { paperId, questionsSaved, provider: provider.name });
     } catch (error: any) {
       errorCode = error?.message || 'recognize_failed';
+      if (errorCode === 'STORAGE_UNAVAILABLE') {
+        return fail(res, 503, 'storage is unavailable. please check MinIO/S3 config.', 'STORAGE_UNAVAILABLE');
+      }
       await prisma.recognitionLog.create({
         data: {
           paperId,

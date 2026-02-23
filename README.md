@@ -152,6 +152,15 @@ npm run smoke:compose
 
 说明：导出接口在 MinIO 不可用时也会继续返回下载内容，仅会把归档任务记录为 `failed`。
 
+上传识别链路专项回归（上传 + provider 配置错误码 + 存储不可用错误码）：
+```bash
+npm run smoke:upload
+```
+会自动验证：
+- `/api/analyze` 在非法 provider 时返回 `PROVIDER_NOT_CONFIGURED`
+- `/api/papers/upload` 在存储不可用时返回 `STORAGE_UNAVAILABLE`
+- 若上传成功，`/api/papers/:id/recognize` 在非法 provider 时返回 `PROVIDER_NOT_CONFIGURED`
+
 ## 日志目录
 
 - 项目根目录固定使用 `logs/`
@@ -180,7 +189,7 @@ npm run preview:full
 
 如果启动日志提示 `MinIO is not reachable`，说明对象存储未连接：
 - `POST /api/analyze`、`POST /api/parse-latex` 仍可用。
-- 上传与入库识别链路（如 `/api/papers/upload`、`/api/papers/:id/recognize`）会失败，需先启动/修正 MinIO。
+- 上传与入库识别链路（如 `/api/papers/upload`、`/api/papers/:id/recognize`）会返回 `STORAGE_UNAVAILABLE`，需先启动/修正 MinIO。
 
 ## 错误码排查（M1）
 

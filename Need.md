@@ -15,6 +15,9 @@
 
 ### P1（建议本周提供）
 
+- MinIO / S3 存储配置（上传识别链路）
+  - 状态：待确认（当前无存储时会返回 `STORAGE_UNAVAILABLE`）
+  - 需要：`MINIO_ENDPOINT`、`MINIO_ACCESS_KEY`、`MINIO_SECRET_KEY`、`MINIO_BUCKET`
 - 邮箱验证码通道
   - 状态：待提供
   - 需要：webhook 或 SMTP/邮件 API 的 host/key/from（当前系统已支持 webhook 投递）

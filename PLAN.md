@@ -8,6 +8,25 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 01:45] Phase 4.1 上传识别链路诊断增强 + smoke
+- 目标
+  - 固化上传识别链路错误码：存储不可用、provider 未配置都可稳定诊断。
+  - 补充上传识别专项 smoke，覆盖 `/api/papers/upload` 与 `/api/papers/:id/recognize`。
+- 改动文件
+  - `server/src/routes/papers.ts`
+  - `scripts/smoke-upload.sh`
+  - `package.json`
+  - `README.md`
+  - `Need.md`
+  - `PLAN.md`
+- 验收标准
+  - `/api/papers/upload` 在存储不可用时返回 `STORAGE_UNAVAILABLE`。
+  - `/api/papers/:id/recognize` 在 provider 未配置时返回 `PROVIDER_NOT_CONFIGURED`。
+  - `npm run smoke:upload` 可跑通并输出 `DONE`。
+- 风险与回滚
+  - 风险：存储异常时提前返回可能减少识别日志沉淀。
+  - 回滚：恢复原始异常上抛路径，仅保留 smoke 脚本。
+
 ### [UTC+8 2026-02-24 01:21] Phase 4.0 M1 主链路 smoke（题库编辑 + 组卷导出）
 - 目标
   - 固化 M1 核心链路回归：题库查询、组卷、导出、编辑一条命令可验证。
