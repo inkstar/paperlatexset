@@ -8,6 +8,23 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-23 11:25] Phase 2.8 严格鉴权一键全流程回归脚本
+- 目标
+  - 提供“单命令完成”严格鉴权回归（启动服务 -> 角色矩阵 -> 自动清理）。
+  - 避免占用默认 3100，降低对现有开发流程干扰。
+- 改动文件
+  - `scripts/smoke-auth-full.sh`
+  - `package.json`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - `npm run smoke:auth:full` 可在默认 `3110` 端口完成全流程并退出。
+  - 启动失败时可输出 `/tmp/paper-auth-full-server.log` 关键日志。
+  - 兼容 `SMOKE_SIGNING_SECRET`、`SMOKE_SERVER_PORT`、`SMOKE_API_BASE` 参数。
+- 风险与回滚
+  - 风险：本地 `SMOKE_SIGNING_SECRET` 与服务端真实配置不一致导致误判。
+  - 回滚：继续使用 `smoke:auth:matrix` + 手动启动服务的分步模式。
+
 ### [UTC+8 2026-02-23 11:12] Phase 2.7 Auth smoke 自动签发 token 与角色矩阵
 - 目标
   - 降低对外部 token 依赖，让严格鉴权回归可在本地一键跑通。

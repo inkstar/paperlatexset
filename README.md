@@ -106,6 +106,14 @@ SMOKE_SIGNING_SECRET='<JWT secret>' npm run smoke:auth:matrix
 - `SMOKE_TOKEN_ISSUER=<issuer>`
 - `SMOKE_TOKEN_AUDIENCE=<audience>`
 
+一键全流程（自动拉起严格鉴权后端 + 角色矩阵 + 自动清理）：
+```bash
+SMOKE_SIGNING_SECRET='<JWT secret>' npm run smoke:auth:full
+```
+可选参数：
+- `SMOKE_SERVER_PORT=3110`（默认 3110，避免占用你正在运行的 3100）
+- `SMOKE_API_BASE=http://localhost:3110`（自定义基地址）
+
 ## 日志目录
 
 - 项目根目录固定使用 `logs/`
