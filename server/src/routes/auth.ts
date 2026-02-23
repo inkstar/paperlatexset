@@ -201,11 +201,44 @@ authRouter.get('/wechat/url', (req, res) => {
 });
 
 authRouter.post('/wechat/login', (_req, res) => {
+  if (!env.WECHAT_APP_ID || !env.WECHAT_APP_SECRET || !env.WECHAT_REDIRECT_URI) {
+    return fail(
+      res,
+      501,
+      'wechat login is not configured yet. please set WECHAT_APP_ID/WECHAT_APP_SECRET and callback route.',
+      'AUTH_WECHAT_NOT_CONFIGURED',
+    );
+  }
+
   return fail(
     res,
     501,
-    'wechat login is not configured yet. please implement code exchange with WeChat OAuth.',
-    'AUTH_WECHAT_NOT_CONFIGURED',
+    'wechat oauth code exchange is not implemented yet.',
+    'AUTH_WECHAT_EXCHANGE_NOT_IMPLEMENTED',
+  );
+});
+
+authRouter.get('/wechat/callback', (req, res) => {
+  if (!env.WECHAT_APP_ID || !env.WECHAT_APP_SECRET || !env.WECHAT_REDIRECT_URI) {
+    return fail(
+      res,
+      501,
+      'wechat login is not configured yet. please set WECHAT_APP_ID/WECHAT_APP_SECRET and callback route.',
+      'AUTH_WECHAT_NOT_CONFIGURED',
+    );
+  }
+
+  const code = String(req.query?.code || '').trim();
+  const state = String(req.query?.state || '').trim();
+  if (!code) {
+    return fail(res, 400, 'wechat callback code is required', 'AUTH_INPUT_REQUIRED');
+  }
+
+  return fail(
+    res,
+    501,
+    `wechat oauth exchange is pending. received callback code and state (${state || 'empty'})`,
+    'AUTH_WECHAT_EXCHANGE_NOT_IMPLEMENTED',
   );
 });
 

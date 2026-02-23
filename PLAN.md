@@ -8,6 +8,21 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 00:55] Phase 3.9 微信回调入口骨架与统一错误码
+- 目标
+  - 补齐微信 OAuth 回调入口占位，统一“已配置但未实现换码”的错误语义。
+- 改动文件
+  - `server/src/routes/auth.ts`
+  - `App.tsx`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - `GET /api/auth/wechat/callback` 在缺少 `code` 时返回 `AUTH_INPUT_REQUIRED`。
+  - 配置完整但未实现换码时，`/api/auth/wechat/login` 与 `/api/auth/wechat/callback` 返回 `AUTH_WECHAT_EXCHANGE_NOT_IMPLEMENTED`。
+- 风险与回滚
+  - 风险：前端可能误认为微信登录已全量可用。
+  - 回滚：隐藏微信入口并恢复原 501 占位文案。
+
 ### [UTC+8 2026-02-24 00:50] Phase 3.8 前端微信登录入口接入
 - 目标
   - 在现有登录弹窗中补齐微信入口，允许直接获取并打开授权链接。

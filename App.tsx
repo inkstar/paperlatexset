@@ -96,6 +96,9 @@ function getFriendlyErrorMessage(error: unknown, fallback: string) {
     if (error.code === 'AUTH_WECHAT_NOT_CONFIGURED') {
       return '微信登录尚未配置。请先在后端设置 WECHAT_APP_ID / WECHAT_APP_SECRET / WECHAT_REDIRECT_URI。';
     }
+    if (error.code === 'AUTH_WECHAT_EXCHANGE_NOT_IMPLEMENTED') {
+      return '微信授权链接已就绪，但回调换码登录还未实现。当前可继续使用邮箱/验证码登录。';
+    }
     if (error.message) return error.message;
   }
   if (error instanceof Error && error.message) return error.message;
