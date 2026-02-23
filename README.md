@@ -9,6 +9,7 @@
 
 - 产品需求：`PRD.md`
 - 实施计划：`PLAN.md`
+- 外部依赖清单：`Need.md`
 - 当前执行阶段：`PLAN.md` 顶部最新条目（已进入 M3 第一步：鉴权与 API v1 入口）
 
 ## 本地开发
@@ -206,6 +207,9 @@ npm run preview:full
 > - `GET /api/v1/authz/admin`（鉴权回归用 admin-only 端点）
 
 ## 登录接口（新增）
+
+前端入口：
+- 顶部“登录/鉴权”按钮可直接执行邮箱注册、邮箱登录、验证码登录，并自动写入 Bearer token。
 
 - 邮箱注册：`POST /api/auth/email/register`
   - body: `{ "email": "...", "password": "...", "name": "..." }`

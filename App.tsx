@@ -50,6 +50,13 @@ import { QuestionTable } from './components/QuestionTable';
 import { PREAMBLE_TEMPLATE } from './constants';
 import { ComposerPage } from './components/ComposerPage';
 import {
+  fetchCurrentUser,
+  loginWithCode,
+  loginWithEmail,
+  registerWithEmail,
+  requestLoginCode,
+} from './services/authApi';
+import {
   AUTH_BEARER_STORAGE_KEY,
   AUTH_ROLE_STORAGE_KEY,
   DevAuthRole,
@@ -132,6 +139,15 @@ export default function App() {
   const [rotation, setRotation] = useState(0);
   const [authRole, setAuthRole] = useState<DevAuthRole>('teacher');
   const [authBearerToken, setAuthBearerToken] = useState('');
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'email_login' | 'email_register' | 'code_login'>('email_login');
+  const [authIdentity, setAuthIdentity] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authCode, setAuthCode] = useState('');
+  const [codeRequested, setCodeRequested] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authMessage, setAuthMessage] = useState('');
+  const [currentAuthSummary, setCurrentAuthSummary] = useState('');
 
   useEffect(() => {
     const storedRole = localStorage.getItem(AUTH_ROLE_STORAGE_KEY) as DevAuthRole | null;
@@ -147,6 +163,85 @@ export default function App() {
     localStorage.setItem(AUTH_BEARER_STORAGE_KEY, authBearerToken);
     setAuthClientConfig({ role: authRole, bearerToken: authBearerToken });
   }, [authRole, authBearerToken]);
+
+  const identityInput = authIdentity.trim();
+  const identityIsPhone = /^1\d{10}$/.test(identityInput);
+  const identityPayload = identityIsPhone ? { phone: identityInput } : { email: identityInput.toLowerCase() };
+
+  const handleRequestCode = async () => {
+    if (!identityInput) {
+      setAuthMessage('请输入邮箱或手机号。');
+      return;
+    }
+    setAuthLoading(true);
+    setAuthMessage('');
+    try {
+      const resp = await requestLoginCode(identityPayload);
+      setCodeRequested(true);
+      setAuthMessage(`验证码已发送（开发模式验证码：${resp.debugCode || '请查看服务端通道'}）`);
+    } catch (error: unknown) {
+      setAuthMessage(getFriendlyErrorMessage(error, '验证码发送失败。'));
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleSubmitAuth = async () => {
+    if (!identityInput) {
+      setAuthMessage('请输入邮箱或手机号。');
+      return;
+    }
+    setAuthLoading(true);
+    setAuthMessage('');
+    try {
+      let result;
+      if (authMode === 'email_register') {
+        if (!authPassword) {
+          setAuthMessage('请输入密码。');
+          setAuthLoading(false);
+          return;
+        }
+        result = await registerWithEmail(identityPayload.email || '', authPassword);
+      } else if (authMode === 'email_login') {
+        if (!authPassword) {
+          setAuthMessage('请输入密码。');
+          setAuthLoading(false);
+          return;
+        }
+        result = await loginWithEmail(identityPayload.email || '', authPassword);
+      } else {
+        if (!authCode) {
+          setAuthMessage('请输入验证码。');
+          setAuthLoading(false);
+          return;
+        }
+        result = await loginWithCode({ ...identityPayload, code: authCode });
+      }
+
+      setAuthBearerToken(result.accessToken);
+      setAuthMessage(`登录成功：${result.user.email} (${result.user.role})`);
+      setCurrentAuthSummary(`${result.user.email} · ${result.user.role}`);
+    } catch (error: unknown) {
+      setAuthMessage(getFriendlyErrorMessage(error, '登录失败。'));
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleCheckCurrentAuth = async () => {
+    setAuthLoading(true);
+    setAuthMessage('');
+    try {
+      const data = await fetchCurrentUser();
+      setCurrentAuthSummary(`${data.user.email} · ${data.user.role} · ${data.auth.mode}`);
+      setAuthMessage(`当前身份：${data.user.email} (${data.user.role})`);
+    } catch (error: unknown) {
+      setCurrentAuthSummary('');
+      setAuthMessage(getFriendlyErrorMessage(error, '身份校验失败。'));
+    } finally {
+      setAuthLoading(false);
+    }
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem('math_latex_history_v2');
@@ -428,6 +523,94 @@ export default function App() {
         </div>
       )}
 
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h3 className="font-bold text-gray-800">登录与鉴权</h3>
+              <button onClick={() => setShowAuthModal(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors"><X size={20}/></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex gap-2">
+                <button onClick={() => setAuthMode('email_login')} className={`px-3 py-1.5 rounded text-sm ${authMode === 'email_login' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>邮箱登录</button>
+                <button onClick={() => setAuthMode('email_register')} className={`px-3 py-1.5 rounded text-sm ${authMode === 'email_register' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>邮箱注册</button>
+                <button onClick={() => setAuthMode('code_login')} className={`px-3 py-1.5 rounded text-sm ${authMode === 'code_login' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>验证码登录</button>
+              </div>
+
+              <input
+                type="text"
+                value={authIdentity}
+                onChange={(e) => setAuthIdentity(e.target.value)}
+                placeholder={authMode === 'code_login' ? '邮箱或手机号(11位)' : '邮箱'}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+              />
+
+              {(authMode === 'email_login' || authMode === 'email_register') && (
+                <input
+                  type="password"
+                  value={authPassword}
+                  onChange={(e) => setAuthPassword(e.target.value)}
+                  placeholder="密码（至少8位）"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                />
+              )}
+
+              {authMode === 'code_login' && (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={authCode}
+                    onChange={(e) => setAuthCode(e.target.value)}
+                    placeholder="6位验证码"
+                    className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                  />
+                  <button
+                    onClick={handleRequestCode}
+                    disabled={authLoading}
+                    className="px-3 py-2 text-sm rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+                  >
+                    获取验证码
+                  </button>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSubmitAuth}
+                  disabled={authLoading}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {authLoading ? '处理中...' : '提交'}
+                </button>
+                <button
+                  onClick={handleCheckCurrentAuth}
+                  disabled={authLoading}
+                  className="px-4 py-2 border border-gray-200 text-sm rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                >
+                  校验当前身份
+                </button>
+                <button
+                  onClick={() => {
+                    setAuthBearerToken('');
+                    setCurrentAuthSummary('');
+                    setAuthMessage('已清除 Bearer token');
+                  }}
+                  className="px-4 py-2 border border-gray-200 text-sm rounded-lg hover:bg-gray-50"
+                >
+                  退出登录
+                </button>
+              </div>
+
+              {authMessage && <div className="text-sm text-gray-700 bg-gray-50 rounded-lg px-3 py-2">{authMessage}</div>}
+              {currentAuthSummary && <div className="text-xs text-gray-500">当前：{currentAuthSummary}</div>}
+              {authMode === 'code_login' && !codeRequested && (
+                <div className="text-xs text-gray-400">提示：当前开发模式会在响应中返回 `debugCode`。</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {previewImage && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/95 p-4" onClick={() => setPreviewImage(null)}>
           <div className="absolute top-4 right-4 flex gap-4 z-50">
@@ -490,6 +673,18 @@ export default function App() {
               题库组卷
             </button>
           </div>
+          <button
+            onClick={() => setShowAuthModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-700 hover:bg-blue-50 rounded-lg transition-colors border border-blue-100"
+            title="登录、获取token、校验当前身份"
+          >
+            <span>登录/鉴权</span>
+          </button>
+          {currentAuthSummary && (
+            <span className="hidden xl:inline text-xs text-gray-500 max-w-56 truncate" title={currentAuthSummary}>
+              {currentAuthSummary}
+            </span>
+          )}
           <button onClick={() => setShowChangelog(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-colors group">
             <Info size={18} className="group-hover:text-blue-500 transition-colors" /><span>更新说明</span>
           </button>

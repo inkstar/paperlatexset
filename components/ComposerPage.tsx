@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BankQuestionItem } from '../types';
 import { Download, FileText, Layers, MinusCircle, PackageOpen, PlusSquare, Trash2 } from 'lucide-react';
+import { getAuthHeaders } from '../services/authClient';
 
 type QueryState = {
   page: number;
@@ -70,7 +71,7 @@ export const ComposerPage: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`/api/questions?${queryString}`);
+      const res = await fetch(`/api/questions?${queryString}`, { headers: getAuthHeaders() });
       const json: ApiResponse = await res.json();
       if (!res.ok || json.error) throw new Error(json.error || '加载失败');
       setItems(json.data);
@@ -131,7 +132,7 @@ export const ComposerPage: React.FC = () => {
     if (query.sourceYear) params.set('sourceYear', query.sourceYear);
 
     try {
-      const res = await fetch(`/api/questions?${params.toString()}`);
+      const res = await fetch(`/api/questions?${params.toString()}`, { headers: getAuthHeaders() });
       const json: ApiResponse = await res.json();
       if (!res.ok || json.error) throw new Error(json.error || '全选失败');
       setSelected((prev) => {
@@ -162,7 +163,7 @@ export const ComposerPage: React.FC = () => {
 
     const createRes = await fetch('/api/papersets', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify({ name: `组卷-${new Date().toLocaleDateString()}` }),
     });
     const created = await createRes.json();
@@ -174,7 +175,7 @@ export const ComposerPage: React.FC = () => {
     const paperSetId = created.data.id;
     const batchRes = await fetch(`/api/papersets/${paperSetId}/items/batch-select`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify({ questionIds: selectedList.map((q) => q.id) }),
     });
     const batchJson = await batchRes.json();
@@ -185,6 +186,7 @@ export const ComposerPage: React.FC = () => {
 
     const exportRes = await fetch(`/api/papersets/${paperSetId}/export-${type}`, {
       method: 'POST',
+      headers: getAuthHeaders(),
     });
     if (!exportRes.ok) {
       const errJson = await exportRes.json();
