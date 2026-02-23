@@ -1,30 +1,50 @@
 # Need
 
-## 1) 当前阶段（邮箱/手机号登录可用）你需要提供
+## 当前你需要提供（按优先级）
 
-- PostgreSQL 连接可用
-  - 确认 `DATABASE_URL` 对应的数据库已启动并可连接。
-- 生产 JWT 密钥
-  - 在 `.env.server` 设置强随机 `JWT_SECRET`（不要使用示例值）。
-- （可选）验证码通道配置（当前开发版会返回 `debugCode`）
-  - 短信服务商账号与签名（用于手机号验证码）。
-  - 邮件服务 SMTP/邮件 API（用于邮箱验证码）。
+### P0（不提供会卡住联调）
 
-## 2) 微信登录（下一阶段）你需要提供
+- [ ] `DATABASE_URL` 可连接
+  - 状态：待提供
+  - 目标值：可直接用于 Prisma 读写的 PostgreSQL 连接串
+  - 示例检查：`npm run prisma:generate && npm run prisma:migrate`
 
-- 微信开放平台应用信息
-  - `WECHAT_APP_ID`
-  - `WECHAT_APP_SECRET`
-  - `WECHAT_REDIRECT_URI`
-- 回调域名与路径
-  - 确认可公网访问的回调地址（HTTPS）。
-- 绑定策略确认
-  - 微信首次登录后，是否允许与已存在邮箱/手机号账号合并。
+- [ ] 生产级 `JWT_SECRET`
+  - 状态：待提供
+  - 目标值：长度 >= 32 的强随机字符串（写入 `.env.server`）
+  - 风险：使用弱密钥会导致 token 可伪造
 
-## 3) 前端联调信息（建议）
+### P1（建议本周提供）
 
-- 预置测试账号（邮箱 + 密码）各 1 组
-- 预置测试手机号各 1 组（teacher/admin）
-- 是否启用严格鉴权默认开关
-  - 建议开发环境：`AUTH_DEV_FALLBACK=true`
-  - 建议联调环境：`AUTH_DEV_FALLBACK=false`
+- [ ] 邮箱验证码通道
+  - 状态：待提供
+  - 需要：SMTP 或邮件 API 的 host/key/from
+  - 当前现状：开发环境返回 `debugCode`
+
+- [ ] 手机验证码通道
+  - 状态：待提供
+  - 需要：短信服务商 appId/appSecret/签名模板
+  - 当前现状：开发环境返回 `debugCode`
+
+- [ ] 联调测试账号
+  - 状态：待提供
+  - 需要：`teacher`、`admin` 两类账号（邮箱或手机号）
+
+### P2（微信登录接入前必须提供）
+
+- [ ] 微信开放平台配置
+  - 状态：待提供
+  - 需要：
+    - `WECHAT_APP_ID`
+    - `WECHAT_APP_SECRET`
+    - `WECHAT_REDIRECT_URI`（HTTPS 公网可达）
+
+- [ ] 账号合并策略确认
+  - 状态：待确认
+  - 需要确认：微信首次登录时，是否允许合并到已存在邮箱/手机号账号
+
+## 已完成（无需再提供）
+
+- [x] 前端登录入口（邮箱/验证码）已就位
+- [x] 前端角色切换（admin/teacher/viewer）已就位
+- [x] 鉴权失败自动引导登录弹窗已就位

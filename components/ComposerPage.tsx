@@ -16,6 +16,7 @@ type ApiResponse = {
   data: BankQuestionItem[];
   meta: { page: number; pageSize: number; total: number; totalPages: number };
   error: string | null;
+  errorCode?: string;
 };
 
 const DEFAULT_QUERY: QueryState = {
@@ -31,7 +32,33 @@ const BASKET_POS_KEY = 'paper_basket_position_v1';
 
 type BasketPosition = { x: number; y: number };
 
-export const ComposerPage: React.FC = () => {
+type ComposerPageProps = {
+  onAuthRequired?: () => void;
+};
+
+type ClientError = Error & { code?: string };
+
+function createClientError(message: string, code?: string): ClientError {
+  const error = new Error(message) as ClientError;
+  error.code = code;
+  return error;
+}
+
+function getFriendlyErrorMessage(error: unknown) {
+  const code = (error as ClientError | undefined)?.code;
+  if (code === 'AUTH_REQUIRED') {
+    return '当前操作需要登录。请点击右上角“登录/鉴权”后重试。';
+  }
+  if (code === 'AUTH_FORBIDDEN') {
+    return '当前账号权限不足。请切换到 teacher/admin 账号后重试。';
+  }
+  if (code === 'BACKEND_UNREACHABLE') {
+    return '无法连接后端服务，请确认后端已启动（默认 3100 端口）。';
+  }
+  return (error as Error)?.message || '请求失败';
+}
+
+export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) => {
   const [query, setQuery] = useState<QueryState>(DEFAULT_QUERY);
   const [items, setItems] = useState<BankQuestionItem[]>([]);
   const [meta, setMeta] = useState({ page: 1, pageSize: 20, total: 0, totalPages: 1 });
@@ -71,13 +98,20 @@ export const ComposerPage: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`/api/questions?${queryString}`, { headers: getAuthHeaders() });
+      let res: Response;
+      try {
+        res = await fetch(`/api/questions?${queryString}`, { headers: getAuthHeaders() });
+      } catch {
+        throw createClientError('后端连接失败', 'BACKEND_UNREACHABLE');
+      }
       const json: ApiResponse = await res.json();
-      if (!res.ok || json.error) throw new Error(json.error || '加载失败');
+      if (!res.ok || json.error) throw createClientError(json.error || '加载失败', json.errorCode || `HTTP_${res.status}`);
       setItems(json.data);
       setMeta(json.meta);
-    } catch (e: any) {
-      setError(e?.message || '加载失败');
+    } catch (error) {
+      const code = (error as ClientError | undefined)?.code;
+      if (code === 'AUTH_REQUIRED' || code === 'AUTH_FORBIDDEN') onAuthRequired?.();
+      setError(getFriendlyErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -132,9 +166,14 @@ export const ComposerPage: React.FC = () => {
     if (query.sourceYear) params.set('sourceYear', query.sourceYear);
 
     try {
-      const res = await fetch(`/api/questions?${params.toString()}`, { headers: getAuthHeaders() });
+      let res: Response;
+      try {
+        res = await fetch(`/api/questions?${params.toString()}`, { headers: getAuthHeaders() });
+      } catch {
+        throw createClientError('后端连接失败', 'BACKEND_UNREACHABLE');
+      }
       const json: ApiResponse = await res.json();
-      if (!res.ok || json.error) throw new Error(json.error || '全选失败');
+      if (!res.ok || json.error) throw createClientError(json.error || '全选失败', json.errorCode || `HTTP_${res.status}`);
       setSelected((prev) => {
         const next = { ...prev };
         json.data.forEach((q) => {
@@ -142,8 +181,10 @@ export const ComposerPage: React.FC = () => {
         });
         return next;
       });
-    } catch (e: any) {
-      setError(e?.message || '全选失败');
+    } catch (error) {
+      const code = (error as ClientError | undefined)?.code;
+      if (code === 'AUTH_REQUIRED' || code === 'AUTH_FORBIDDEN') onAuthRequired?.();
+      setError(getFriendlyErrorMessage(error));
     }
   }
 
@@ -161,48 +202,56 @@ export const ComposerPage: React.FC = () => {
       return;
     }
 
-    const createRes = await fetch('/api/papersets', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-      body: JSON.stringify({ name: `组卷-${new Date().toLocaleDateString()}` }),
-    });
-    const created = await createRes.json();
-    if (!createRes.ok || created.error) {
-      setError(created.error || '创建组卷失败');
-      return;
-    }
+    try {
+      let createRes: Response;
+      try {
+        createRes = await fetch('/api/papersets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+          body: JSON.stringify({ name: `组卷-${new Date().toLocaleDateString()}` }),
+        });
+      } catch {
+        throw createClientError('后端连接失败', 'BACKEND_UNREACHABLE');
+      }
+      const created = await createRes.json();
+      if (!createRes.ok || created.error) {
+        throw createClientError(created.error || '创建组卷失败', created.errorCode || `HTTP_${createRes.status}`);
+      }
 
-    const paperSetId = created.data.id;
-    const batchRes = await fetch(`/api/papersets/${paperSetId}/items/batch-select`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-      body: JSON.stringify({ questionIds: selectedList.map((q) => q.id) }),
-    });
-    const batchJson = await batchRes.json();
-    if (!batchRes.ok || batchJson.error) {
-      setError(batchJson.error || '保存组卷失败');
-      return;
-    }
+      const paperSetId = created.data.id;
+      const batchRes = await fetch(`/api/papersets/${paperSetId}/items/batch-select`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ questionIds: selectedList.map((q) => q.id) }),
+      });
+      const batchJson = await batchRes.json();
+      if (!batchRes.ok || batchJson.error) {
+        throw createClientError(batchJson.error || '保存组卷失败', batchJson.errorCode || `HTTP_${batchRes.status}`);
+      }
 
-    const exportRes = await fetch(`/api/papersets/${paperSetId}/export-${type}`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-    });
-    if (!exportRes.ok) {
-      const errJson = await exportRes.json();
-      setError(errJson.error || '导出失败');
-      return;
-    }
+      const exportRes = await fetch(`/api/papersets/${paperSetId}/export-${type}`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      });
+      if (!exportRes.ok) {
+        const errJson = await exportRes.json();
+        throw createClientError(errJson.error || '导出失败', errJson.errorCode || `HTTP_${exportRes.status}`);
+      }
 
-    const blob = await exportRes.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = type === 'latex' ? 'paper.tex' : 'paper.docx';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      const blob = await exportRes.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = type === 'latex' ? 'paper.tex' : 'paper.docx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      const code = (error as ClientError | undefined)?.code;
+      if (code === 'AUTH_REQUIRED' || code === 'AUTH_FORBIDDEN') onAuthRequired?.();
+      setError(getFriendlyErrorMessage(error));
+    }
   }
 
   function handleDragStart(e: React.PointerEvent<HTMLDivElement>) {

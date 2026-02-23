@@ -866,7 +866,10 @@ export default function App() {
       </main>
       ) : (
       <main className="flex-1 max-w-[1280px] w-full mx-auto p-6 overflow-auto">
-        <ComposerPage />
+        <ComposerPage onAuthRequired={() => {
+          setShowAuthModal(true);
+          setAuthMessage('检测到当前操作需要登录或权限不足，请先完成登录。');
+        }} />
       </main>
       )}
 

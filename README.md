@@ -10,6 +10,7 @@
 - 产品需求：`PRD.md`
 - 实施计划：`PLAN.md`
 - 外部依赖清单：`Need.md`
+- 你需要提供什么：优先查看 `Need.md` 的 `P0` 勾选项
 - 当前执行阶段：`PLAN.md` 顶部最新条目（已进入 M3 第一步：鉴权与 API v1 入口）
 
 ## 本地开发
@@ -58,6 +59,7 @@ npm run dev
 - 可直接切换 `admin / teacher / viewer`（无 Bearer token 时使用）。
 - 可填入 Bearer token（填入后优先使用 Bearer）。
 - 配置会保存在浏览器 `localStorage`，用于本地联调。
+- 组卷页如果返回 `AUTH_REQUIRED/AUTH_FORBIDDEN`，会自动弹出“登录/鉴权”弹窗。
 
 ### 5) 一键 smoke 验证（可选）
 
