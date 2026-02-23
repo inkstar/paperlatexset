@@ -8,6 +8,22 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 00:44] Phase 3.6 验证码通道专项 smoke 自动化
+- 目标
+  - 固化验证码通道行为回归：debug 模式可返回 `debugCode`，关闭 debug 后返回稳定未配置错误码。
+- 改动文件
+  - `scripts/smoke-auth-code.sh`
+  - `package.json`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - `npm run smoke:auth:code` 自动完成两轮启动并校验：
+    - debug 模式：`sent=true` 且存在 `debugCode`
+    - debug 关闭：邮箱返回 `AUTH_EMAIL_NOT_CONFIGURED`，手机号返回 `AUTH_SMS_NOT_CONFIGURED`
+- 风险与回滚
+  - 风险：脚本依赖本机端口可用（默认 3120）。
+  - 回滚：保留手工 curl 验证路径，移除独立脚本入口。
+
 ### [UTC+8 2026-02-24 00:41] Phase 3.5 前端鉴权错误码文案补齐
 - 目标
   - 将验证码通道相关错误码映射为可执行提示，减少用户侧排障成本。

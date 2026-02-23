@@ -133,6 +133,11 @@ SMOKE_SIGNING_SECRET='<JWT secret>' npm run smoke:auth:full
 - `SMOKE_SERVER_PORT=3110`（默认 3110，避免占用你正在运行的 3100）
 - `SMOKE_API_BASE=http://localhost:3110`（自定义基地址）
 
+验证码通道专项回归（自动验证 debug 模式和通道未配置错误码）：
+```bash
+npm run smoke:auth:code
+```
+
 ## 日志目录
 
 - 项目根目录固定使用 `logs/`

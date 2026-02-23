@@ -14,6 +14,7 @@
     "smoke:auth": "bash scripts/smoke-auth.sh",
     "smoke:auth:matrix": "bash scripts/smoke-auth-matrix.sh",
     "smoke:auth:full": "bash scripts/smoke-auth-full.sh",
+    "smoke:auth:code": "bash scripts/smoke-auth-code.sh",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
