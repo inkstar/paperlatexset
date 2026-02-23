@@ -35,6 +35,11 @@
   - `AUTH_CODE_WEBHOOK_URL=`（配置后会把验证码推送到该 webhook）
   - `AUTH_CODE_EMAIL_ENABLED=true|false`
   - `AUTH_CODE_PHONE_ENABLED=true|false`
+- 微信登录配置（可选）：
+  - `WECHAT_APP_ID=`
+  - `WECHAT_APP_SECRET=`
+  - `WECHAT_REDIRECT_URI=`（微信平台回调地址）
+  - `WECHAT_FRONTEND_REDIRECT_URI=`（可选：后端回调后重定向到前端落 token）
 - 存储降级配置（开发建议开启）：
   - `STORAGE_FALLBACK_LOCAL=true|false`（MinIO 不可用时是否自动落盘到本地）
   - `STORAGE_FALLBACK_DIR=.local-storage`（本地落盘目录）
@@ -170,6 +175,16 @@ npm run smoke:upload
 - `/api/papers/upload` 在存储不可用时返回 `STORAGE_UNAVAILABLE`
 - 若上传成功，`/api/papers/:id/recognize` 在非法 provider 时返回 `PROVIDER_NOT_CONFIGURED`
 
+上传识别 E2E 回归（Gemini 基线，非 mock）：
+```bash
+npm run smoke:recognition
+```
+会自动执行：
+- 上传测试图片到 `/api/papers/upload`
+- 调用 `/api/papers/:id/recognize`（默认 provider=gemini）
+- 成功路径：校验 `/api/questions` 可查到识别结果
+- 失败路径：输出 `errorCode` + `x-request-id` + 日志路径（用于快速定位）
+
 ## 日志目录
 
 - 项目根目录固定使用 `logs/`
@@ -211,9 +226,25 @@ npm run preview:full
   - 含义：当前识别 provider 未配置 API key。
   - 处理：在 `.env.server` 配置对应 `GEMINI_API_KEY` 或 `GLM_API_KEY`，重启后端。
 
-- `PROVIDER_REQUEST_FAILED`
-  - 含义：已连接 provider，但请求失败（限流/网络/参数）。
-  - 处理：查看后端日志与返回错误信息，必要时切换 provider 重试。
+- `PROVIDER_AUTH_FAILED`
+  - 含义：provider 鉴权失败（401/403）。
+  - 处理：检查 API key、权限和配额。
+
+- `PROVIDER_RATE_LIMITED`
+  - 含义：provider 限流（429）。
+  - 处理：稍后重试，或切换 provider。
+
+- `PROVIDER_UPSTREAM_ERROR`
+  - 含义：provider 上游或网络异常（5xx/超时/连接失败）。
+  - 处理：重试并结合 `x-request-id` 查看后端日志。
+
+- `PROVIDER_RESPONSE_INVALID`
+  - 含义：provider 返回结构异常，解析失败。
+  - 处理：重试或切换 provider。
+
+- `PROVIDER_PRECHECK_FAILED`
+  - 含义：识别调用前预检失败（配置或模型不匹配）。
+  - 处理：检查 provider 配置和模型设置。
 
 提示：后端响应头会返回 `x-request-id`，可用于在 `logs/access-YYYY-MM-DD.log` 中定位同一请求。
 鉴权相关请求会返回 `x-auth-mode`（`bearer` 或 `dev_fallback`），可用于确认当前鉴权路径。
@@ -279,8 +310,9 @@ npm run preview:full
 - 邮箱/手机号验证码登录：`POST /api/auth/code/login`
   - body: `{ "email": "...", "code": "123456" }` 或 `{ "phone": "...", "code": "123456" }`
 - 微信登录预留：`GET /api/auth/wechat/url`、`POST /api/auth/wechat/login`
+- 微信登录：
   - `GET /api/auth/wechat/url`：配置了 `WECHAT_APP_ID/WECHAT_APP_SECRET/WECHAT_REDIRECT_URI` 后返回可用授权链接。
-  - `GET /api/auth/wechat/callback`：微信回调占位入口（当前返回 `AUTH_WECHAT_EXCHANGE_NOT_IMPLEMENTED`）。
-  - `POST /api/auth/wechat/login`：当前返回 `AUTH_WECHAT_EXCHANGE_NOT_IMPLEMENTED`（待实现 code 换 token）。
+  - `POST /api/auth/wechat/login`：使用 `code` 进行换码并登录，返回 `accessToken`。
+  - `GET /api/auth/wechat/callback`：若设置 `WECHAT_FRONTEND_REDIRECT_URI`，会自动重定向到前端并带上 `code/state`。
 - 服务能力探测：`GET /api/auth/capabilities`
   - 返回验证码通道开关、微信配置状态、当前存储模式（`minio`/`local`）。

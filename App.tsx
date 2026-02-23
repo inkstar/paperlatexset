@@ -54,6 +54,7 @@ import {
   fetchAuthCapabilities,
   fetchWechatAuthorizeUrl,
   fetchCurrentUser,
+  loginWithWechatCode,
   loginWithCode,
   loginWithEmail,
   registerWithEmail,
@@ -76,6 +77,21 @@ function getFriendlyErrorMessage(error: unknown, fallback: string) {
     }
     if (error.code === 'PROVIDER_NOT_CONFIGURED') {
       return '识别模型未配置。请在 .env.server 中配置 Gemini/GLM 的 API Key，或切换已配置的 provider。';
+    }
+    if (error.code === 'PROVIDER_AUTH_FAILED') {
+      return '识别模型鉴权失败。请检查 API Key、权限和配额配置。';
+    }
+    if (error.code === 'PROVIDER_RATE_LIMITED') {
+      return '识别模型触发限流。请稍后重试，或切换到另一 provider。';
+    }
+    if (error.code === 'PROVIDER_UPSTREAM_ERROR') {
+      return '识别模型上游或网络异常。请稍后重试并查看后端日志中的 request-id。';
+    }
+    if (error.code === 'PROVIDER_RESPONSE_INVALID') {
+      return '识别模型返回格式异常。请重试或切换 provider。';
+    }
+    if (error.code === 'PROVIDER_PRECHECK_FAILED') {
+      return '识别预检查失败：当前 provider 配置与模型设置不一致。';
     }
     if (error.code === 'PROVIDER_REQUEST_FAILED') {
       return `模型请求失败：${error.message}`;
@@ -100,6 +116,12 @@ function getFriendlyErrorMessage(error: unknown, fallback: string) {
     }
     if (error.code === 'AUTH_WECHAT_EXCHANGE_NOT_IMPLEMENTED') {
       return '微信授权链接已就绪，但回调换码登录还未实现。当前可继续使用邮箱/验证码登录。';
+    }
+    if (error.code === 'AUTH_WECHAT_CODE_INVALID') {
+      return '微信授权码无效或已过期，请重新发起微信登录。';
+    }
+    if (error.code === 'AUTH_WECHAT_UPSTREAM_FAILED') {
+      return '微信服务暂时不可用，请稍后重试。';
     }
     if (error.message) return error.message;
   }
@@ -299,6 +321,35 @@ export default function App() {
       handleFetchAuthCapabilities();
     }
   }, [showAuthModal]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const state = params.get('state');
+    if (!code || !state || !state.startsWith('paper_')) {
+      return;
+    }
+
+    setShowAuthModal(true);
+    setAuthLoading(true);
+    setAuthMessage('检测到微信回调，正在完成登录...');
+    loginWithWechatCode(code)
+      .then((result) => {
+        setAuthBearerToken(result.accessToken);
+        setCurrentAuthSummary(`${result.user.email} · ${result.user.role} · wechat`);
+        setAuthMessage(`微信登录成功：${result.user.email} (${result.user.role})`);
+        const next = new URL(window.location.href);
+        next.searchParams.delete('code');
+        next.searchParams.delete('state');
+        window.history.replaceState({}, '', next.pathname + next.search);
+      })
+      .catch((error: unknown) => {
+        setAuthMessage(getFriendlyErrorMessage(error, '微信登录失败。'));
+      })
+      .finally(() => {
+        setAuthLoading(false);
+      });
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem('math_latex_history_v2');

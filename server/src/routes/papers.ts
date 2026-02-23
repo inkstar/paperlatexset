@@ -2,8 +2,14 @@ import { Router } from 'express';
 import { createRequire } from 'node:module';
 import { UserRole } from '@prisma/client';
 import { prisma } from '../db/prisma';
+import { writeRecognitionEventLog } from '../middleware/requestLogger';
 import { requireRole } from '../middleware/auth';
-import { getProvider, estimateCost } from '../services/providerService';
+import {
+  buildRecognitionPrecheck,
+  executeRecognitionWithRetry,
+  mapProviderError,
+} from '../services/recognitionExecutionService';
+import { getProvider, estimateCost, listProviders } from '../services/providerService';
 import { ensureUser } from '../services/userService';
 import { ensureBucket, getObjectBuffer, uploadBuffer } from '../services/storageService';
 import { asyncHandler, fail, ok } from '../utils/http';
@@ -69,8 +75,9 @@ papersRouter.post(
   '/:id/recognize',
   requireRole([UserRole.admin, UserRole.teacher]),
   asyncHandler(async (req, res) => {
+    const requestId = (res.locals as any).requestId || null;
     const paperId = req.params.id;
-    const providerName = (req.body.provider as string) || undefined;
+    const providerName = (req.body.provider as string) || 'gemini';
 
     const paper = await prisma.paper.findUnique({
       where: { id: paperId },
@@ -78,6 +85,11 @@ papersRouter.post(
     });
     if (!paper) return fail(res, 404, 'Paper not found');
     if (paper.files.length === 0) return fail(res, 400, 'Paper has no files');
+    for (const f of paper.files) {
+      console.log(
+        `[paper-recognize][request=${requestId}] received file filename=${f.fileName} size=${f.size} mime=${f.mimeType}`,
+      );
+    }
 
     let provider;
     try {
@@ -86,27 +98,70 @@ papersRouter.post(
       const msg = error?.message || 'Provider is not available';
       return fail(res, 400, msg, 'PROVIDER_NOT_CONFIGURED');
     }
-    const files = await Promise.all(
-      paper.files.map(async (f) => {
-        let buffer: Buffer;
-        try {
-          buffer = await getObjectBuffer(f.objectKey);
-        } catch {
-          throw new Error('STORAGE_UNAVAILABLE');
-        }
-        return {
-          mimeType: f.mimeType,
-          dataBase64: buffer.toString('base64'),
-        };
-      }),
-    );
+
+    const providerMeta = listProviders().find((p) => p.name === provider.name);
+    const precheck = buildRecognitionPrecheck({
+      providerName: provider.name,
+      model: provider.model,
+      providerConfigured: Boolean(providerMeta?.enabled),
+    });
+    if (!precheck.ok) {
+      await writeRecognitionEventLog({
+        requestId,
+        operation: 'paper_recognize',
+        paperId,
+        provider: provider.name,
+        model: provider.model,
+        precheckIssues: precheck.issues,
+        success: false,
+      });
+      return fail(
+        res,
+        400,
+        `Provider precheck failed: ${precheck.issues.join(', ')}`,
+        'PROVIDER_PRECHECK_FAILED',
+        { issues: precheck.issues },
+      );
+    }
 
     let success = false;
-    let errorCode: string | null = null;
     let questionsSaved = 0;
-    const start = Date.now();
     try {
-      const result = await provider.recognizeFromFiles(files);
+      const files = await Promise.all(
+        paper.files.map(async (f) => {
+          let buffer: Buffer;
+          try {
+            buffer = await getObjectBuffer(f.objectKey);
+          } catch {
+            throw new Error('STORAGE_UNAVAILABLE');
+          }
+          return {
+            mimeType: f.mimeType,
+            dataBase64: buffer.toString('base64'),
+          };
+        }),
+      );
+
+      console.log(
+        `[paper-recognize][request=${requestId}] call provider provider=${provider.name} model=${provider.model} operation=paper_recognize`,
+      );
+      const execResult = await executeRecognitionWithRetry({
+        provider,
+        operation: 'paper_recognize',
+        requestId,
+        files: files.map((f, idx) => ({
+          mimeType: f.mimeType,
+          dataBase64: f.dataBase64,
+          sizeBytes: paper.files[idx]?.size || 0,
+        })),
+      });
+      const result = execResult.result;
+      console.log(
+        `[paper-recognize][request=${requestId}] provider returned status=200 preview=${JSON.stringify(result.raw || {}).slice(0, 200)}`,
+      );
+      console.log(
+        `[paper-recognize][request=${requestId}] parsed questions count=${result.questions.length}`,
+      );
       const cost = estimateCost(provider.name, result.usage.inputTokens, result.usage.outputTokens);
 
       await prisma.$transaction(async (tx) => {
@@ -151,7 +206,7 @@ papersRouter.post(
             model: provider.model,
             inputTokens: result.usage.inputTokens,
             outputTokens: result.usage.outputTokens,
-            latencyMs: result.usage.latencyMs || Date.now() - start,
+            latencyMs: result.usage.latencyMs || execResult.telemetry.durationMs,
             estimatedCost: cost,
             success: true,
           },
@@ -159,12 +214,27 @@ papersRouter.post(
       });
 
       success = true;
+      await writeRecognitionEventLog({
+        ...execResult.telemetry,
+        paperId,
+        questionsSaved,
+      });
       return ok(res, { paperId, questionsSaved, provider: provider.name });
     } catch (error: any) {
-      errorCode = error?.message || 'recognize_failed';
-      if (errorCode === 'STORAGE_UNAVAILABLE') {
+      if (String(error?.message || '').includes('STORAGE_UNAVAILABLE')) {
         return fail(res, 503, 'storage is unavailable. please check MinIO/S3 config.', 'STORAGE_UNAVAILABLE');
       }
+      const mapped = error?.mapped || mapProviderError(error);
+      const telemetry = error?.telemetry || {
+        requestId,
+        operation: 'paper_recognize',
+        provider: provider.name,
+        model: provider.model,
+        success: false,
+        errorCode: mapped.errorCode,
+        errorCategory: mapped.category,
+        upstreamStatus: mapped.upstreamStatus,
+      };
       await prisma.recognitionLog.create({
         data: {
           paperId,
@@ -172,13 +242,23 @@ papersRouter.post(
           model: provider.model,
           inputTokens: 0,
           outputTokens: 0,
-          latencyMs: Date.now() - start,
+          latencyMs: telemetry.durationMs || 0,
           estimatedCost: 0,
           success,
-          errorCode,
+          errorCode: mapped.errorCode,
         },
       });
-      return fail(res, 500, errorCode);
+      await writeRecognitionEventLog({
+        ...telemetry,
+        paperId,
+      });
+      console.log(
+        `[paper-recognize][request=${requestId}] provider failed errorCode=${mapped.errorCode} upstreamStatus=${mapped.upstreamStatus || 'n/a'} message=${mapped.message.slice(0, 200)}`,
+      );
+      return fail(res, mapped.status, mapped.message, mapped.errorCode, {
+        upstreamStatus: mapped.upstreamStatus,
+        category: mapped.category,
+      });
     }
   }),
 );

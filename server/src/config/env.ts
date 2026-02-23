@@ -12,6 +12,7 @@ const envSchema = z.object({
   WECHAT_APP_ID: z.string().optional(),
   WECHAT_APP_SECRET: z.string().optional(),
   WECHAT_REDIRECT_URI: z.string().optional(),
+  WECHAT_FRONTEND_REDIRECT_URI: z.string().optional(),
   AUTH_CODE_DEBUG: z.string().default('true').transform((v) => v === 'true'),
   AUTH_CODE_WEBHOOK_URL: z.string().optional(),
   AUTH_CODE_EMAIL_ENABLED: z.string().default('false').transform((v) => v === 'true'),

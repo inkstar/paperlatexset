@@ -36,11 +36,12 @@ async function postForm<T>(url: string, formData: FormData): Promise<T> {
   }
 
   const json = await parseResponseJson(res);
+  const requestId = res.headers.get('x-request-id');
   if (!res.ok || json?.error) {
     throw new ApiError(json?.error || 'Request failed', {
       code: json?.errorCode || `HTTP_${res.status}`,
       status: res.status,
-      details: json?.details || null,
+      details: { ...(json?.details || {}), requestId },
     });
   }
   return json.data as T;
@@ -59,11 +60,12 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   }
 
   const json = await parseResponseJson(res);
+  const requestId = res.headers.get('x-request-id');
   if (!res.ok || json?.error) {
     throw new ApiError(json?.error || 'Request failed', {
       code: json?.errorCode || `HTTP_${res.status}`,
       status: res.status,
-      details: json?.details || null,
+      details: { ...(json?.details || {}), requestId },
     });
   }
   return json.data as T;

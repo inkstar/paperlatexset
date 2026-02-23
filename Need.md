@@ -39,10 +39,11 @@
     - `WECHAT_APP_ID`
     - `WECHAT_APP_SECRET`
     - `WECHAT_REDIRECT_URI`（HTTPS 公网可达）
-  - 当前现状：后端已支持生成微信授权 URL，前端登录弹窗可直接拉起授权链接
+    - `WECHAT_FRONTEND_REDIRECT_URI`（可选，用于前端自动落 token）
+  - 当前现状：后端已支持 `code` 换取系统 token，前端可自动处理 `code/state` 回调
 - 账号合并策略确认
   - 状态：待确认
-  - 需要确认：微信首次登录时，是否允许合并到已存在邮箱/手机号账号
+  - 需要确认：微信首次登录时，是否允许合并到已存在邮箱/手机号账号（当前默认按 openid 独立建号）
 
 ## 已完成（无需再提供）
 

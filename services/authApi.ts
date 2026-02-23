@@ -91,6 +91,10 @@ export async function fetchWechatAuthorizeUrl(state?: string): Promise<{
   return json.data;
 }
 
+export async function loginWithWechatCode(code: string): Promise<LoginResult> {
+  return post<LoginResult>('/api/auth/wechat/login', { code });
+}
+
 export async function fetchCurrentUser(): Promise<{ user: LoginUser; auth: { mode: string; reason: string } }> {
   let res: Response;
   try {

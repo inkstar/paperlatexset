@@ -54,6 +54,16 @@ export async function writeClientEventLog(event: string, payload: Record<string,
   await appendLine(getLogFileName('client-event'), line);
 }
 
+export async function writeRecognitionEventLog(payload: Record<string, unknown>) {
+  const now = new Date();
+  const line = JSON.stringify({
+    eventType: 'recognition',
+    ts: getBeijingTimestamp(now),
+    ...payload,
+  });
+  await appendLine(getLogFileName('access'), line);
+}
+
 export function requestLogger(req: Request, res: Response, next: NextFunction) {
   const start = Date.now();
   const requestId = createRequestId();

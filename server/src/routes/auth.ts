@@ -7,6 +7,7 @@ import { issueAccessToken } from '../services/tokenService';
 import { deliverLoginCode, LoginCodeDeliveryError } from '../services/loginCodeDeliveryService';
 import { env } from '../config/env';
 import { getStorageMode } from '../services/storageService';
+import { exchangeWechatCode } from '../services/wechatAuthService';
 
 type LoginCodeRecord = {
   code: string;
@@ -223,7 +224,7 @@ authRouter.get('/wechat/url', (req, res) => {
   });
 });
 
-authRouter.post('/wechat/login', (_req, res) => {
+authRouter.post('/wechat/login', asyncHandler(async (req, res) => {
   if (!env.WECHAT_APP_ID || !env.WECHAT_APP_SECRET || !env.WECHAT_REDIRECT_URI) {
     return fail(
       res,
@@ -233,13 +234,54 @@ authRouter.post('/wechat/login', (_req, res) => {
     );
   }
 
-  return fail(
-    res,
-    501,
-    'wechat oauth code exchange is not implemented yet.',
-    'AUTH_WECHAT_EXCHANGE_NOT_IMPLEMENTED',
-  );
-});
+  const code = String(req.body?.code || '').trim();
+  if (!code) {
+    return fail(res, 400, 'wechat code is required', 'AUTH_INPUT_REQUIRED');
+  }
+
+  try {
+    const wx = await exchangeWechatCode(code);
+    const canonicalEmail = `wechat_${wx.openId}@wechat.local`;
+    let user = await prisma.user.findUnique({ where: { email: canonicalEmail } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: canonicalEmail,
+          name: wx.nickname || `wechat-${wx.openId.slice(0, 8)}`,
+          role: UserRole.teacher,
+          isActive: true,
+        },
+      });
+    }
+    if (!user.isActive) return fail(res, 403, 'user is disabled', 'AUTH_USER_DISABLED');
+
+    const accessToken = issueAccessToken({ userId: user.id, email: user.email, role: user.role });
+    return ok(res, {
+      accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      wechat: {
+        openId: wx.openId,
+        unionId: wx.unionId,
+      },
+    });
+  } catch (error: any) {
+    const msg = String(error?.message || '');
+    if (msg === 'AUTH_WECHAT_NOT_CONFIGURED') {
+      return fail(res, 501, 'wechat login is not configured yet.', 'AUTH_WECHAT_NOT_CONFIGURED');
+    }
+    if (msg.startsWith('AUTH_WECHAT_HTTP_')) {
+      return fail(res, 502, 'wechat upstream http failed', 'AUTH_WECHAT_UPSTREAM_FAILED');
+    }
+    if (msg.startsWith('AUTH_WECHAT_EXCHANGE_FAILED')) {
+      return fail(res, 401, 'wechat code exchange failed', 'AUTH_WECHAT_CODE_INVALID');
+    }
+    return fail(res, 502, 'wechat login failed', 'AUTH_WECHAT_UPSTREAM_FAILED');
+  }
+}));
 
 authRouter.get('/wechat/callback', (req, res) => {
   if (!env.WECHAT_APP_ID || !env.WECHAT_APP_SECRET || !env.WECHAT_REDIRECT_URI) {
@@ -257,12 +299,18 @@ authRouter.get('/wechat/callback', (req, res) => {
     return fail(res, 400, 'wechat callback code is required', 'AUTH_INPUT_REQUIRED');
   }
 
-  return fail(
-    res,
-    501,
-    `wechat oauth exchange is pending. received callback code and state (${state || 'empty'})`,
-    'AUTH_WECHAT_EXCHANGE_NOT_IMPLEMENTED',
-  );
+  if (env.WECHAT_FRONTEND_REDIRECT_URI) {
+    const redirectUrl = new URL(env.WECHAT_FRONTEND_REDIRECT_URI);
+    redirectUrl.searchParams.set('code', code);
+    if (state) redirectUrl.searchParams.set('state', state);
+    return res.redirect(302, redirectUrl.toString());
+  }
+
+  return ok(res, {
+    code,
+    state: state || null,
+    nextAction: 'POST /api/auth/wechat/login with { code }',
+  });
 });
 
 function handleAuthDbError(res: Parameters<typeof fail>[0], error: any) {

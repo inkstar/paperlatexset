@@ -8,6 +8,36 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 02:42] Phase 4.6-4.9 识别诊断闭环 + E2E 回归 + 微信换码登录
+- 目标
+  - 打通 Gemini 首次识别失败定位闭环：结构化日志、稳定错误码、有限重试、首调冷启动标记。
+  - 新增 `smoke:recognition` 覆盖上传识别真实链路（非 mock）。
+  - 完成微信 `code -> openid -> 系统 token` 登录，并接入前端回调落 token。
+- 改动文件
+  - `server/src/services/recognitionExecutionService.ts`
+  - `server/src/routes/recognition.ts`
+  - `server/src/routes/papers.ts`
+  - `server/src/middleware/requestLogger.ts`
+  - `server/src/services/wechatAuthService.ts`
+  - `server/src/routes/auth.ts`
+  - `server/src/config/env.ts`
+  - `services/authApi.ts`
+  - `services/geminiService.ts`
+  - `App.tsx`
+  - `scripts/smoke-recognition.sh`
+  - `package.json`
+  - `.env.server.example`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - 识别失败返回稳定错误码：`PROVIDER_AUTH_FAILED`、`PROVIDER_RATE_LIMITED`、`PROVIDER_UPSTREAM_ERROR`、`PROVIDER_RESPONSE_INVALID`。
+  - 识别日志可回答 `requestId/provider/model/fileCount/fileSizeBand/upstreamStatus/errorCategory`。
+  - `npm run smoke:recognition` 成功路径可验证题库入库；失败路径可输出 `errorCode + requestId + log`。
+  - 微信授权回调后前端可自动用 `code` 换取系统 token。
+- 风险与回滚
+  - 风险：微信开放平台接口波动会影响登录稳定性。
+  - 回滚：保留邮箱/验证码登录为主路径，微信入口可临时隐藏。
+
 ### [UTC+8 2026-02-24 02:14] Phase 4.5 健康检查 readiness 扩展与 smoke 校验
 - 目标
   - 将 `/api/v1/health` 从存活探针升级为依赖状态快照（provider/存储/auth/wechat）。
