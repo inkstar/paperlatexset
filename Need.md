@@ -35,7 +35,7 @@
     - `WECHAT_APP_ID`
     - `WECHAT_APP_SECRET`
     - `WECHAT_REDIRECT_URI`（HTTPS 公网可达）
-  - 当前现状：后端已支持生成微信授权 URL（`GET /api/auth/wechat/url`）
+  - 当前现状：后端已支持生成微信授权 URL，前端登录弹窗可直接拉起授权链接
 - 账号合并策略确认
   - 状态：待确认
   - 需要确认：微信首次登录时，是否允许合并到已存在邮箱/手机号账号

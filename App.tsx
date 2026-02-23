@@ -50,6 +50,7 @@ import { QuestionTable } from './components/QuestionTable';
 import { PREAMBLE_TEMPLATE } from './constants';
 import { ComposerPage } from './components/ComposerPage';
 import {
+  fetchWechatAuthorizeUrl,
   fetchCurrentUser,
   loginWithCode,
   loginWithEmail,
@@ -91,6 +92,9 @@ function getFriendlyErrorMessage(error: unknown, fallback: string) {
     }
     if (error.code === 'AUTH_CODE_EXPIRED') {
       return '验证码已过期，请重新获取验证码。';
+    }
+    if (error.code === 'AUTH_WECHAT_NOT_CONFIGURED') {
+      return '微信登录尚未配置。请先在后端设置 WECHAT_APP_ID / WECHAT_APP_SECRET / WECHAT_REDIRECT_URI。';
     }
     if (error.message) return error.message;
   }
@@ -163,6 +167,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authMessage, setAuthMessage] = useState('');
   const [currentAuthSummary, setCurrentAuthSummary] = useState('');
+  const [wechatAuthorizeUrl, setWechatAuthorizeUrl] = useState('');
 
   useEffect(() => {
     const storedRole = localStorage.getItem(AUTH_ROLE_STORAGE_KEY) as DevAuthRole | null;
@@ -253,6 +258,22 @@ export default function App() {
     } catch (error: unknown) {
       setCurrentAuthSummary('');
       setAuthMessage(getFriendlyErrorMessage(error, '身份校验失败。'));
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleFetchWechatUrl = async () => {
+    setAuthLoading(true);
+    setAuthMessage('');
+    try {
+      const state = `paper_${Date.now()}`;
+      const data = await fetchWechatAuthorizeUrl(state);
+      setWechatAuthorizeUrl(data.authorizeUrl);
+      setAuthMessage('微信授权链接已生成，可点击下方“打开微信登录页”。');
+    } catch (error: unknown) {
+      setWechatAuthorizeUrl('');
+      setAuthMessage(getFriendlyErrorMessage(error, '获取微信授权链接失败。'));
     } finally {
       setAuthLoading(false);
     }
@@ -608,12 +629,36 @@ export default function App() {
                   onClick={() => {
                     setAuthBearerToken('');
                     setCurrentAuthSummary('');
+                    setWechatAuthorizeUrl('');
                     setAuthMessage('已清除 Bearer token');
                   }}
                   className="px-4 py-2 border border-gray-200 text-sm rounded-lg hover:bg-gray-50"
                 >
                   退出登录
                 </button>
+              </div>
+
+              <div className="border-t pt-3">
+                <div className="text-xs text-gray-500 mb-2">微信登录（预留）</div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleFetchWechatUrl}
+                    disabled={authLoading}
+                    className="px-4 py-2 border border-green-200 text-green-700 text-sm rounded-lg hover:bg-green-50 disabled:opacity-50"
+                  >
+                    获取微信登录链接
+                  </button>
+                  {wechatAuthorizeUrl && (
+                    <a
+                      href={wechatAuthorizeUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700"
+                    >
+                      打开微信登录页
+                    </a>
+                  )}
+                </div>
               </div>
 
               {authMessage && <div className="text-sm text-gray-700 bg-gray-50 rounded-lg px-3 py-2">{authMessage}</div>}

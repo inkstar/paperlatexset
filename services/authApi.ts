@@ -68,6 +68,29 @@ export async function loginWithCode(input: { email?: string; phone?: string; cod
   return post<LoginResult>('/api/auth/code/login', input);
 }
 
+export async function fetchWechatAuthorizeUrl(state?: string): Promise<{
+  authorizeUrl: string;
+  state: string;
+  redirectUri: string;
+}> {
+  const qs = state ? `?state=${encodeURIComponent(state)}` : '';
+  let res: Response;
+  try {
+    res = await fetch(`/api/auth/wechat/url${qs}`);
+  } catch {
+    throw new ApiError('无法连接后端服务，请确认后端已启动（默认 3100 端口）。', { code: 'BACKEND_UNREACHABLE' });
+  }
+  const json = await parseJson(res);
+  if (!res.ok || json?.error) {
+    throw new ApiError(json?.error || 'Request failed', {
+      code: json?.errorCode || `HTTP_${res.status}`,
+      status: res.status,
+      details: json?.details || null,
+    });
+  }
+  return json.data;
+}
+
 export async function fetchCurrentUser(): Promise<{ user: LoginUser; auth: { mode: string; reason: string } }> {
   let res: Response;
   try {

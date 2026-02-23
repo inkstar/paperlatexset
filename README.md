@@ -228,6 +228,7 @@ npm run preview:full
 
 前端入口：
 - 顶部“登录/鉴权”按钮可直接执行邮箱注册、邮箱登录、验证码登录，并自动写入 Bearer token。
+- 登录弹窗支持“获取微信登录链接”，会调用后端 `/api/auth/wechat/url`。
 
 - 邮箱注册：`POST /api/auth/email/register`
   - body: `{ "email": "...", "password": "...", "name": "..." }`
