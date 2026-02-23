@@ -5,6 +5,7 @@ import { prisma } from './db/prisma';
 import { scheduleDailyMetrics } from './jobs/dailyMetricsJob';
 import { authMiddleware } from './middleware/auth';
 import { requestLogger } from './middleware/requestLogger';
+import { authRouter } from './routes/auth';
 import { authInfoRouter } from './routes/authInfo';
 import { clientEventsRouter } from './routes/clientEvents';
 import { paperSetsRouter } from './routes/paperSets';
@@ -32,6 +33,7 @@ app.use(authMiddleware);
 app.use(requestLogger);
 
 app.use('/api/providers', providersRouter);
+app.use('/api/auth', authRouter);
 app.use('/api/papers', papersRouter);
 app.use('/api/questions', questionsRouter);
 app.use('/api/papersets', paperSetsRouter);
@@ -44,6 +46,7 @@ app.use('/api/v1/papers', papersRouter);
 app.use('/api/v1/questions', questionsRouter);
 app.use('/api/v1/stats', statsRouter);
 app.use('/api/v1', authInfoRouter);
+app.use('/api/v1/auth', authRouter);
 
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);

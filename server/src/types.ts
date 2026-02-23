@@ -8,7 +8,14 @@ export type AuthUser = {
 
 export type AuthContext = {
   mode: 'bearer' | 'dev_fallback';
-  reason: 'supabase_jwt' | 'legacy_jwt' | 'x_headers' | 'missing_token' | 'invalid_token' | 'fallback_after_invalid_token';
+  reason:
+    | 'supabase_jwt'
+    | 'legacy_jwt'
+    | 'x_headers'
+    | 'missing_token'
+    | 'invalid_token'
+    | 'fallback_after_invalid_token'
+    | 'public_route';
 };
 
 export type ApiEnvelope<T> = {

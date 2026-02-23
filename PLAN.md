@@ -8,6 +8,27 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-23 11:50] Phase 3.0 登录能力起步：邮箱/手机号可用 + 微信预留
+- 目标
+  - 在现有 JWT 体系中落地可用登录入口，优先支持邮箱与手机号验证码登录。
+  - 为微信登录保留标准接口入口，后续可接 OAuth 换码流程。
+- 改动文件
+  - `server/src/middleware/auth.ts`
+  - `server/src/routes/auth.ts`
+  - `server/src/services/passwordService.ts`
+  - `server/src/services/tokenService.ts`
+  - `server/src/index.ts`
+  - `.env.server.example`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - 严格鉴权模式下，`/api/auth/*` 可访问（不被中间件拦截）。
+  - `email/register`、`email/login`、`code/request`、`code/login` 可返回可用 `accessToken`。
+  - 微信接口返回明确 `AUTH_WECHAT_NOT_CONFIGURED`，非静默失败。
+- 风险与回滚
+  - 风险：验证码接口当前为开发版（返回 debugCode），生产环境需替换为短信/邮件服务。
+  - 回滚：保留路由定义，临时关闭验证码登录入口，仅保留邮箱密码登录。
+
 ### [UTC+8 2026-02-23 11:34] Phase 2.9 前端开发鉴权面板（角色切换 + Bearer）
 - 目标
   - 在前端直接支持 `admin/teacher/viewer` 切换，减少后端联调成本。

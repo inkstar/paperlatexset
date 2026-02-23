@@ -204,3 +204,17 @@ npm run preview:full
 > - `GET /api/v1/me`
 > - `GET /api/v1/health`（公开探活，不要求 token）
 > - `GET /api/v1/authz/admin`（鉴权回归用 admin-only 端点）
+
+## 登录接口（新增）
+
+- 邮箱注册：`POST /api/auth/email/register`
+  - body: `{ "email": "...", "password": "...", "name": "..." }`
+- 邮箱密码登录：`POST /api/auth/email/login`
+  - body: `{ "email": "...", "password": "..." }`
+- 邮箱/手机号验证码申请：`POST /api/auth/code/request`
+  - body: `{ "email": "..." }` 或 `{ "phone": "..." }`
+  - 当前为开发版：响应会返回 `debugCode`（生产应接短信/邮件服务）
+- 邮箱/手机号验证码登录：`POST /api/auth/code/login`
+  - body: `{ "email": "...", "code": "123456" }` 或 `{ "phone": "...", "code": "123456" }`
+- 微信登录预留：`GET /api/auth/wechat/url`、`POST /api/auth/wechat/login`
+  - 目前返回 `AUTH_WECHAT_NOT_CONFIGURED`，用于后续 OAuth 接入。

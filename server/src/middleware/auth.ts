@@ -12,6 +12,12 @@ declare module 'express-serve-static-core' {
 }
 
 export function authMiddleware(req: Request, _res: Response, next: NextFunction) {
+  if (isPublicRoute(req.path)) {
+    req.authContext = { mode: 'bearer', reason: 'public_route' };
+    _res.setHeader('x-auth-mode', 'public');
+    return next();
+  }
+
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (token) {
     try {
@@ -74,6 +80,15 @@ export function authMiddleware(req: Request, _res: Response, next: NextFunction)
   };
   _res.setHeader('x-auth-mode', 'dev_fallback');
   next();
+}
+
+function isPublicRoute(path: string) {
+  return (
+    path === '/api/health' ||
+    path === '/api/v1/health' ||
+    path.startsWith('/api/auth/') ||
+    path.startsWith('/api/v1/auth/')
+  );
 }
 
 function mapJwtPayload(payload: jwt.JwtPayload): AuthUser {
