@@ -1,17 +1,23 @@
 import { env } from '../config/env';
-import { GeminiProvider } from './providers/geminiProvider';
-import { GlmProvider } from './providers/glmProvider';
 import { RecognitionProvider } from './providers/types';
 
-const providerFactories: Record<'gemini' | 'glm', () => RecognitionProvider> = {
-  gemini: () => new GeminiProvider(),
-  glm: () => new GlmProvider(),
-};
-const providerCache: Partial<Record<'gemini' | 'glm', RecognitionProvider>> = {};
-let defaultProviderName: 'gemini' | 'glm' = env.DEFAULT_PROVIDER;
+type ProviderName = 'gemini' | 'glm';
 
-export function getProvider(providerName?: string): RecognitionProvider {
-  const selected = (providerName || defaultProviderName) as 'gemini' | 'glm';
+const providerFactories: Record<ProviderName, () => Promise<RecognitionProvider>> = {
+  gemini: async () => {
+    const { GeminiProvider } = await import('./providers/geminiProvider');
+    return new GeminiProvider();
+  },
+  glm: async () => {
+    const { GlmProvider } = await import('./providers/glmProvider');
+    return new GlmProvider();
+  },
+};
+const providerCache: Partial<Record<ProviderName, Promise<RecognitionProvider>>> = {};
+let defaultProviderName: ProviderName = env.DEFAULT_PROVIDER;
+
+export async function getProvider(providerName?: string): Promise<RecognitionProvider> {
+  const selected = (providerName || defaultProviderName) as ProviderName;
   const factory = providerFactories[selected];
   if (!factory) {
     throw new Error(`Unsupported provider: ${selected}`);
@@ -25,7 +31,7 @@ export function getProvider(providerName?: string): RecognitionProvider {
   if (!providerCache[selected]) {
     providerCache[selected] = factory();
   }
-  return providerCache[selected]!;
+  return await providerCache[selected]!;
 }
 
 export function listProviders() {
@@ -49,7 +55,7 @@ export function getDefaultProviderName() {
   return defaultProviderName;
 }
 
-export function setDefaultProviderName(next: 'gemini' | 'glm') {
+export function setDefaultProviderName(next: ProviderName) {
   if (!providerFactories[next]) {
     throw new Error(`Unsupported provider: ${next}`);
   }

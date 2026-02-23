@@ -78,7 +78,7 @@ if [ -n "${SMOKE_BEARER_TOKEN:-}" ]; then
     echo "$ME_RESP"
     exit 1
   fi
-elif echo "$ME_RESP" | rg -q '"id":"dev-teacher-id"'; then
+elif echo "$ME_RESP" | rg -q '"id":"dev-teacher-id"' && echo "$ME_RESP" | rg -q '"mode":"dev_fallback"'; then
   echo "[smoke] PASS: v1 me reachable (dev fallback)"
 else
   echo "[smoke] FAIL: v1 me response unexpected"

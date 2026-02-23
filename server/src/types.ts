@@ -6,6 +6,11 @@ export type AuthUser = {
   email?: string;
 };
 
+export type AuthContext = {
+  mode: 'bearer' | 'dev_fallback';
+  reason: 'supabase_jwt' | 'legacy_jwt' | 'x_headers' | 'missing_token' | 'invalid_token' | 'fallback_after_invalid_token';
+};
+
 export type ApiEnvelope<T> = {
   data: T;
   meta?: Record<string, unknown>;

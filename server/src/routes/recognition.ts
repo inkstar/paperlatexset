@@ -1,10 +1,12 @@
 import { Router } from 'express';
-import multer from 'multer';
+import { createRequire } from 'node:module';
 import { UserRole } from '@prisma/client';
 import { getProvider } from '../services/providerService';
 import { asyncHandler, fail, ok } from '../utils/http';
 import { requireRole } from '../middleware/auth';
 
+const require = createRequire(import.meta.url);
+const multer = require('multer') as typeof import('multer');
 const upload = multer({ limits: { fileSize: 20 * 1024 * 1024 } });
 export const recognitionRouter = Router();
 
@@ -18,7 +20,7 @@ recognitionRouter.post(
 
     let provider;
     try {
-      provider = getProvider((req.body.provider as string) || undefined);
+      provider = await getProvider((req.body.provider as string) || undefined);
     } catch (error: any) {
       const msg = error?.message || 'Provider is not available';
       return fail(res, 400, msg, 'PROVIDER_NOT_CONFIGURED');
@@ -49,7 +51,7 @@ recognitionRouter.post(
 
     let provider;
     try {
-      provider = getProvider((req.body.provider as string) || undefined);
+      provider = await getProvider((req.body.provider as string) || undefined);
     } catch (error: any) {
       const msg = error?.message || 'Provider is not available';
       return fail(res, 400, msg, 'PROVIDER_NOT_CONFIGURED');

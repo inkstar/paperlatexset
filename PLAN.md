@@ -8,6 +8,48 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-23 10:23] Phase 2.4 启动链路稳定性修复（server tsconfig + 路由导入收敛）
+- 目标
+  - 修复后端在当前环境中启动无响应的问题，确保 `smoke` 自动拉起稳定可用。
+  - 降低前端 `tsconfig` 配置对 Node 后端运行时的干扰。
+- 改动文件
+  - `tsconfig.server.json`
+  - `package.json`
+  - `server/src/services/providerService.ts`
+  - `server/src/routes/recognition.ts`
+  - `server/src/routes/papers.ts`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - `SMOKE_AUTO_START=1 npm run smoke` 可自动拉起并通过。
+  - `AUTH_DEV_FALLBACK=false` 下 `npm run smoke:auth` 校验 `AUTH_REQUIRED` 通过。
+  - 访问日志继续包含 `authMode/authReason`，不影响既有错误码验收。
+- 风险与回滚
+  - 风险：Provider 改为懒加载后，首次识别请求会有轻微冷启动开销。
+  - 回滚：恢复静态加载并在启动阶段预热 provider（仅在启动稳定后执行）。
+
+### [UTC+8 2026-02-23 09:54] Phase 2.3 鉴权可观测性增强（auth mode/reason）
+- 目标
+  - 让鉴权路径可观测：明确请求是走 Bearer 还是 Dev Fallback。
+  - 在日志和自检接口中暴露鉴权上下文，缩短 401/403 排障时间。
+- 改动文件
+  - `server/src/types.ts`
+  - `server/src/middleware/auth.ts`
+  - `server/src/middleware/requestLogger.ts`
+  - `server/src/routes/clientEvents.ts`
+  - `server/src/routes/authInfo.ts`
+  - `scripts/smoke.sh`
+  - `scripts/smoke-auth.sh`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - `/api/v1/me` 响应包含 `auth.mode` 与 `auth.reason`。
+  - `logs/access-YYYY-MM-DD.log`、`logs/client-event-YYYY-MM-DD.log` 包含 `authMode`、`authReason`。
+  - `npm run smoke` 与 `npm run smoke:auth` 均能校验到对应鉴权模式。
+- 风险与回滚
+  - 风险：日志字段新增可能影响旧解析脚本。
+  - 回滚：新增字段保持可选，不删除原有字段。
+
 ### [UTC+8 2026-02-22 08:25] Phase 2.2 健康检查公开化（严格鉴权兼容）
 - 目标
   - 在 `AUTH_DEV_FALLBACK=false` 时保持健康检查可用，支持部署探活。

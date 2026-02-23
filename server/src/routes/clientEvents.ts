@@ -18,6 +18,8 @@ clientEventsRouter.post(
       userId: req.user?.id || null,
       role: req.user?.role || null,
       userEmail: req.user?.email || null,
+      authMode: req.authContext?.mode || null,
+      authReason: req.authContext?.reason || null,
       ...payload,
     });
 

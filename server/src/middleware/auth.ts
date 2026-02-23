@@ -2,11 +2,12 @@ import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { UserRole } from '@prisma/client';
 import { env } from '../config/env';
-import { AuthUser } from '../types';
+import { AuthContext, AuthUser } from '../types';
 
 declare module 'express-serve-static-core' {
   interface Request {
     user?: AuthUser;
+    authContext?: AuthContext;
   }
 }
 
@@ -21,14 +22,20 @@ export function authMiddleware(req: Request, _res: Response, next: NextFunction)
           audience: env.SUPABASE_JWT_AUDIENCE || undefined,
         }) as jwt.JwtPayload;
         req.user = mapJwtPayload(payload);
+        req.authContext = { mode: 'bearer', reason: 'supabase_jwt' };
+        _res.setHeader('x-auth-mode', 'bearer');
         return next();
       }
 
       const payload = jwt.verify(token, env.JWT_SECRET) as jwt.JwtPayload;
       req.user = mapJwtPayload(payload);
+      req.authContext = { mode: 'bearer', reason: 'legacy_jwt' };
+      _res.setHeader('x-auth-mode', 'bearer');
       return next();
     } catch (error: any) {
       if (!env.AUTH_DEV_FALLBACK) {
+        req.authContext = { mode: 'bearer', reason: 'invalid_token' };
+        _res.setHeader('x-auth-mode', 'bearer');
         return _res.status(401).json({
           data: null,
           error: 'Invalid bearer token',
@@ -40,6 +47,8 @@ export function authMiddleware(req: Request, _res: Response, next: NextFunction)
   }
 
   if (!env.AUTH_DEV_FALLBACK) {
+    req.authContext = { mode: 'bearer', reason: 'missing_token' };
+    _res.setHeader('x-auth-mode', 'bearer');
     return _res.status(401).json({
       data: null,
       error: 'Missing bearer token',
@@ -59,6 +68,11 @@ export function authMiddleware(req: Request, _res: Response, next: NextFunction)
     role,
     email: (req.headers['x-user-email'] as string) || 'dev@example.com',
   };
+  req.authContext = {
+    mode: 'dev_fallback',
+    reason: token ? 'fallback_after_invalid_token' : 'x_headers',
+  };
+  _res.setHeader('x-auth-mode', 'dev_fallback');
   next();
 }
 

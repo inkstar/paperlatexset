@@ -51,6 +51,8 @@ npm run dev
 - 前端：`http://localhost:3000`
 - 后端：`http://localhost:3100`
 
+说明：后端启动脚本已固定使用 `tsconfig.server.json`，避免前端 `tsconfig` 选项影响服务启动稳定性。
+
 ### 5) 一键 smoke 验证（可选）
 
 ```bash
@@ -70,7 +72,7 @@ SMOKE_BEARER_TOKEN='<your-access-token>' npm run smoke
 会自动验证：
 - `GET /api/health`
 - `GET /api/v1/health`
-- `GET /api/v1/me`
+- `GET /api/v1/me`（返回 `auth.mode/auth.reason`）
 - `POST /api/client-events/open`
 - `POST /api/parse-latex`（空输入错误码）
 - `POST /api/analyze`（无文件错误码）
@@ -132,6 +134,7 @@ npm run preview:full
   - 处理：查看后端日志与返回错误信息，必要时切换 provider 重试。
 
 提示：后端响应头会返回 `x-request-id`，可用于在 `logs/access-YYYY-MM-DD.log` 中定位同一请求。
+鉴权相关请求会返回 `x-auth-mode`（`bearer` 或 `dev_fallback`），可用于确认当前鉴权路径。
 
 ## 核心能力
 

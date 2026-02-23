@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "moduleResolution": "node16",
+    "allowJs": false,
+    "jsx": "preserve"
+  },
+  "include": [
+    "server/src/**/*.ts"
+  ]
+}

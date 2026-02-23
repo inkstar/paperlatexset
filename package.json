@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently \"npm:dev:web\" \"npm:dev:server\"",
     "dev:web": "vite",
-    "dev:server": "DOTENV_CONFIG_PATH=.env.server tsx watch server/src/index.ts",
+    "dev:server": "DOTENV_CONFIG_PATH=.env.server tsx --tsconfig tsconfig.server.json watch server/src/index.ts",
     "build": "vite build",
     "preview": "vite preview",
     "preview:full": "concurrently \"npm:preview\" \"npm:server:start\"",
@@ -15,7 +15,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
-    "server:start": "DOTENV_CONFIG_PATH=.env.server tsx server/src/index.ts"
+    "server:start": "DOTENV_CONFIG_PATH=.env.server tsx --tsconfig tsconfig.server.json server/src/index.ts"
   },
   "dependencies": {
     "@google/genai": "^1.31.0",

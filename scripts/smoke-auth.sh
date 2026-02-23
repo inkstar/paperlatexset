@@ -19,7 +19,7 @@ fi
 if [ -n "${SMOKE_BEARER_TOKEN:-}" ]; then
   echo "[smoke-auth] check bearer token"
   WITH_TOKEN_RESP="$(curl -sS -H "Authorization: Bearer ${SMOKE_BEARER_TOKEN}" "$API_BASE/api/v1/me")"
-  if echo "$WITH_TOKEN_RESP" | rg -q '"id":"'; then
+  if echo "$WITH_TOKEN_RESP" | rg -q '"id":"' && echo "$WITH_TOKEN_RESP" | rg -q '"mode":"bearer"'; then
     echo "[smoke-auth] PASS: bearer token accepted"
   else
     echo "[smoke-auth] FAIL: bearer token response unexpected"

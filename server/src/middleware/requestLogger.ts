@@ -75,6 +75,8 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
       userAgent: req.get('user-agent') || '',
       userId: req.user?.id || null,
       role: req.user?.role || null,
+      authMode: req.authContext?.mode || null,
+      authReason: req.authContext?.reason || null,
       errorCode: (res.locals as any).errorCode || null,
     });
 

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import multer from 'multer';
+import { createRequire } from 'node:module';
 import { UserRole } from '@prisma/client';
 import { prisma } from '../db/prisma';
 import { requireRole } from '../middleware/auth';
@@ -8,6 +8,8 @@ import { ensureUser } from '../services/userService';
 import { ensureBucket, getObjectBuffer, uploadBuffer } from '../services/storageService';
 import { asyncHandler, fail, ok } from '../utils/http';
 
+const require = createRequire(import.meta.url);
+const multer = require('multer') as typeof import('multer');
 const upload = multer({ limits: { fileSize: 20 * 1024 * 1024 } });
 export const papersRouter = Router();
 
@@ -69,7 +71,7 @@ papersRouter.post(
     if (!paper) return fail(res, 404, 'Paper not found');
     if (paper.files.length === 0) return fail(res, 400, 'Paper has no files');
 
-    const provider = getProvider(providerName);
+    const provider = await getProvider(providerName);
     const files = await Promise.all(
       paper.files.map(async (f) => {
         const buffer = await getObjectBuffer(f.objectKey);

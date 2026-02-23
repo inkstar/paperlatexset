@@ -9,6 +9,6 @@ authInfoRouter.get(
   '/me',
   requireRole([UserRole.admin, UserRole.teacher, UserRole.viewer]),
   asyncHandler(async (req, res) => {
-    return ok(res, { user: req.user || null });
+    return ok(res, { user: req.user || null, auth: req.authContext || null });
   }),
 );
