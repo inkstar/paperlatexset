@@ -68,6 +68,13 @@ curl -fsS "$API_BASE/api/health" >/tmp/smoke-health.json
 
 curl -fsS "$API_BASE/api/v1/health" >/tmp/smoke-v1-health.json
 echo "[smoke] PASS: v1 health reachable"
+if rg -q '"readiness"' /tmp/smoke-v1-health.json && rg -q '"storage"' /tmp/smoke-v1-health.json; then
+  echo "[smoke] PASS: v1 health readiness payload present"
+else
+  echo "[smoke] FAIL: v1 health readiness payload missing"
+  cat /tmp/smoke-v1-health.json
+  exit 1
+fi
 
 ME_RESP="$(curl_with_auth -sS "$API_BASE/api/v1/me")"
 if [ -n "${SMOKE_BEARER_TOKEN:-}" ]; then

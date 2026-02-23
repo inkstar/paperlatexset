@@ -93,7 +93,7 @@ SMOKE_BEARER_TOKEN='<your-access-token>' npm run smoke
 
 会自动验证：
 - `GET /api/health`
-- `GET /api/v1/health`
+- `GET /api/v1/health`（含 `readiness` 依赖状态）
 - `GET /api/v1/me`（返回 `auth.mode/auth.reason`）
 - `POST /api/client-events/open`
 - `POST /api/parse-latex`（空输入错误码）

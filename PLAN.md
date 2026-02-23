@@ -8,6 +8,22 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 02:14] Phase 4.5 健康检查 readiness 扩展与 smoke 校验
+- 目标
+  - 将 `/api/v1/health` 从存活探针升级为依赖状态快照（provider/存储/auth/wechat）。
+  - 在 `smoke` 中校验 readiness 字段存在，防止结构回归。
+- 改动文件
+  - `server/src/index.ts`
+  - `scripts/smoke.sh`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - `/api/v1/health` 返回 `readiness` 字段。
+  - `npm run smoke` 可通过 readiness 校验。
+- 风险与回滚
+  - 风险：返回字段增加可能影响依赖旧结构的外部脚本。
+  - 回滚：保留新字段为可选，不移除现有健康字段。
+
 ### [UTC+8 2026-02-24 02:07] Phase 4.4 演示数据清理闭环（防止 smoke 数据膨胀）
 - 目标
   - 解决 `SMOKE_DEMO` 数据持续追加问题，保持回归数据集可控且可重复。

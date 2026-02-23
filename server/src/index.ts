@@ -15,7 +15,7 @@ import { questionsRouter } from './routes/questions';
 import { recognitionRouter } from './routes/recognition';
 import { reportsRouter } from './routes/reports';
 import { statsRouter } from './routes/stats';
-import { ensureBucket } from './services/storageService';
+import { ensureBucket, getStorageMode } from './services/storageService';
 
 const app = express();
 
@@ -23,10 +23,25 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
 app.get('/api/health', (_req, res) => {
-  res.json({ data: { ok: true, now: new Date().toISOString() }, error: null });
+  res.json({
+    data: {
+      ok: true,
+      now: new Date().toISOString(),
+      readiness: buildReadiness(),
+    },
+    error: null,
+  });
 });
 app.get('/api/v1/health', (_req, res) => {
-  res.json({ data: { ok: true, now: new Date().toISOString(), version: 'v1' }, error: null });
+  res.json({
+    data: {
+      ok: true,
+      now: new Date().toISOString(),
+      version: 'v1',
+      readiness: buildReadiness(),
+    },
+    error: null,
+  });
 });
 
 app.use(authMiddleware);
@@ -78,3 +93,24 @@ process.on('SIGINT', async () => {
   await prisma.$disconnect();
   server.close(() => process.exit(0));
 });
+
+function buildReadiness() {
+  return {
+    provider: {
+      defaultProvider: env.DEFAULT_PROVIDER,
+      geminiConfigured: Boolean(env.GEMINI_API_KEY),
+      glmConfigured: Boolean(env.GLM_API_KEY),
+    },
+    storage: {
+      mode: getStorageMode(),
+      fallbackLocalEnabled: env.STORAGE_FALLBACK_LOCAL,
+    },
+    auth: {
+      devFallbackEnabled: env.AUTH_DEV_FALLBACK,
+      codeDebugEnabled: env.AUTH_CODE_DEBUG,
+    },
+    wechat: {
+      configured: Boolean(env.WECHAT_APP_ID && env.WECHAT_APP_SECRET && env.WECHAT_REDIRECT_URI),
+    },
+  };
+}
