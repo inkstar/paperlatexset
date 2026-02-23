@@ -4,6 +4,7 @@ import { prisma } from '../db/prisma';
 import { asyncHandler, fail, ok } from '../utils/http';
 import { hashPassword, verifyPassword } from '../services/passwordService';
 import { issueAccessToken } from '../services/tokenService';
+import { deliverLoginCode, LoginCodeDeliveryError } from '../services/loginCodeDeliveryService';
 
 type LoginCodeRecord = {
   code: string;
@@ -100,14 +101,28 @@ authRouter.post(
       targetValue,
     });
 
-    // TODO: replace with SMS/email provider integration in production.
-    return ok(res, {
-      sent: true,
-      targetType,
-      targetValue,
-      debugCode: code,
-      expiresInSeconds: Math.floor(LOGIN_CODE_TTL_MS / 1000),
-    });
+    try {
+      const delivery = await deliverLoginCode({
+        targetType,
+        targetValue,
+        code,
+        expiresInSeconds: Math.floor(LOGIN_CODE_TTL_MS / 1000),
+      });
+      return ok(res, {
+        sent: delivery.delivered,
+        targetType,
+        targetValue,
+        debugCode: delivery.debugCode,
+        expiresInSeconds: Math.floor(LOGIN_CODE_TTL_MS / 1000),
+      });
+    } catch (error) {
+      loginCodes.delete(key);
+      if (error instanceof LoginCodeDeliveryError) {
+        return fail(res, 503, error.message, error.code);
+      }
+      throw error;
+    }
+
   }),
 );
 

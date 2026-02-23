@@ -17,12 +17,12 @@
 
 - 邮箱验证码通道
   - 状态：待提供
-  - 需要：SMTP 或邮件 API 的 host/key/from
-  - 当前现状：开发环境返回 `debugCode`
+  - 需要：webhook 或 SMTP/邮件 API 的 host/key/from（当前系统已支持 webhook 投递）
+  - 当前现状：默认 `AUTH_CODE_DEBUG=true`，可返回 `debugCode`
 - 手机验证码通道
   - 状态：待提供
-  - 需要：短信服务商 appId/appSecret/签名模板
-  - 当前现状：开发环境返回 `debugCode`
+  - 需要：短信服务商 appId/appSecret/签名模板（或短信网关 webhook）
+  - 当前现状：默认 `AUTH_CODE_DEBUG=true`，可返回 `debugCode`
 - 联调测试账号
   - 状态：待提供
   - 需要：`teacher`、`admin` 两类账号（邮箱或手机号）

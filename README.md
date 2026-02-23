@@ -30,6 +30,11 @@
   - 填写 `SUPABASE_JWT_SECRET`
   - 可选填写 `SUPABASE_JWT_ISSUER`、`SUPABASE_JWT_AUDIENCE`
   - 可选设置 `SUPABASE_ROLE_CLAIM_PATH`（默认 `app_metadata.role`）
+- 验证码登录通道配置（可选）：
+  - `AUTH_CODE_DEBUG=true|false`（是否在响应中返回 `debugCode`）
+  - `AUTH_CODE_WEBHOOK_URL=`（配置后会把验证码推送到该 webhook）
+  - `AUTH_CODE_EMAIL_ENABLED=true|false`
+  - `AUTH_CODE_PHONE_ENABLED=true|false`
 
 ### 2) 安装依赖
 
@@ -225,7 +230,12 @@ npm run preview:full
   - body: `{ "email": "...", "password": "..." }`
 - 邮箱/手机号验证码申请：`POST /api/auth/code/request`
   - body: `{ "email": "..." }` 或 `{ "phone": "..." }`
-  - 当前为开发版：响应会返回 `debugCode`（生产应接短信/邮件服务）
+  - 当 `AUTH_CODE_DEBUG=true` 时响应会返回 `debugCode`
+  - 可配 `AUTH_CODE_WEBHOOK_URL` 将验证码投递到外部通道
+  - 未启用对应通道时会返回：
+    - `AUTH_EMAIL_NOT_CONFIGURED`
+    - `AUTH_SMS_NOT_CONFIGURED`
+    - `AUTH_CODE_DELIVERY_FAILED`
 - 邮箱/手机号验证码登录：`POST /api/auth/code/login`
   - body: `{ "email": "...", "code": "123456" }` 或 `{ "phone": "...", "code": "123456" }`
 - 微信登录预留：`GET /api/auth/wechat/url`、`POST /api/auth/wechat/login`

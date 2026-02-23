@@ -8,6 +8,26 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 00:38] Phase 3.4 验证码通道配置化（webhook + 稳定错误码）
+- 目标
+  - 将验证码申请从纯开发模式升级为“可配置通道 + 明确失败码”，为真实短信/邮件接入铺路。
+  - 保持前端协议不变，继续兼容 `debugCode` 联调路径。
+- 改动文件
+  - `server/src/config/env.ts`
+  - `server/src/services/loginCodeDeliveryService.ts`
+  - `server/src/routes/auth.ts`
+  - `.env.server.example`
+  - `README.md`
+  - `Need.md`
+  - `PLAN.md`
+- 验收标准
+  - `POST /api/auth/code/request` 在 `AUTH_CODE_DEBUG=true` 时返回 `debugCode`。
+  - 未启用邮箱/短信通道且关闭 debug 时，返回稳定错误码 `AUTH_EMAIL_NOT_CONFIGURED` 或 `AUTH_SMS_NOT_CONFIGURED`。
+  - 配置 `AUTH_CODE_WEBHOOK_URL` 且投递失败时返回 `AUTH_CODE_DELIVERY_FAILED`。
+- 风险与回滚
+  - 风险：webhook 发送慢会增加验证码接口耗时。
+  - 回滚：清空 `AUTH_CODE_WEBHOOK_URL` 并保持 `AUTH_CODE_DEBUG=true`。
+
 ### [UTC+8 2026-02-24 00:10] Phase 3.3 Supabase 连接打通与建表自愈脚本
 - 目标
   - 打通 Supabase pooler 连接并恢复 `questions` 主链路可用。
