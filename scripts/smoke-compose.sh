@@ -16,6 +16,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
+echo "[smoke-compose] clean previous demo data"
+npm run db:clean:demo >/tmp/paper-smoke-compose-clean.log
+
 echo "[smoke-compose] seed demo data"
 npm run db:seed:demo >/tmp/paper-smoke-compose-seed.log
 

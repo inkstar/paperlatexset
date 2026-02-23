@@ -21,6 +21,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "db:bootstrap": "DOTENV_CONFIG_PATH=.env.server node -r dotenv/config scripts/bootstrap-db.mjs",
+    "db:clean:demo": "DOTENV_CONFIG_PATH=.env.server node -r dotenv/config scripts/clean-demo-data.mjs",
     "db:seed:demo": "DOTENV_CONFIG_PATH=.env.server node -r dotenv/config scripts/seed-demo-data.mjs",
     "server:start": "DOTENV_CONFIG_PATH=.env.server tsx --tsconfig tsconfig.server.json server/src/index.ts"
   },

@@ -146,12 +146,18 @@ npm run smoke:auth:code
 npm run smoke:compose
 ```
 会自动执行：
+- `npm run db:clean:demo` 清理上次演示数据
 - `npm run db:seed:demo` 写入演示题目
 - `GET /api/questions?sourceExam=SMOKE_DEMO`
 - `POST /api/papersets` + `batch-select`
 - `POST /api/papersets/:id/export-latex`
 - `POST /api/papersets/:id/export-word`
 - `PATCH /api/questions/:id`
+
+如需手工清理演示数据：
+```bash
+npm run db:clean:demo
+```
 
 说明：导出接口在 MinIO 不可用时也会继续返回下载内容，仅会把归档任务记录为 `failed`。
 

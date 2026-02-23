@@ -8,6 +8,22 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 02:07] Phase 4.4 演示数据清理闭环（防止 smoke 数据膨胀）
+- 目标
+  - 解决 `SMOKE_DEMO` 数据持续追加问题，保持回归数据集可控且可重复。
+- 改动文件
+  - `scripts/clean-demo-data.mjs`
+  - `scripts/smoke-compose.sh`
+  - `package.json`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - `npm run db:clean:demo` 可清理演示题目及其关联数据。
+  - `npm run smoke:compose` 执行前自动清理旧演示数据。
+- 风险与回滚
+  - 风险：误匹配清理条件可能删到非测试数据。
+  - 回滚：清理范围仅限定 `sourceExam=SMOKE_DEMO` 与 `Smoke Compose Set` 空集。
+
 ### [UTC+8 2026-02-24 01:59] Phase 4.3 服务能力探测（Capabilities）与前端状态面板
 - 目标
   - 提供公开能力探测接口，减少“到底配没配好”的盲调。
