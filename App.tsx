@@ -77,6 +77,21 @@ function getFriendlyErrorMessage(error: unknown, fallback: string) {
     if (error.code === 'PROVIDER_REQUEST_FAILED') {
       return `模型请求失败：${error.message}`;
     }
+    if (error.code === 'AUTH_EMAIL_NOT_CONFIGURED') {
+      return '邮箱验证码通道未配置。请在后端开启邮箱通道，或先使用邮箱密码登录。';
+    }
+    if (error.code === 'AUTH_SMS_NOT_CONFIGURED') {
+      return '短信验证码通道未配置。请先使用邮箱登录，或配置短信/验证码通道。';
+    }
+    if (error.code === 'AUTH_CODE_DELIVERY_FAILED') {
+      return '验证码投递失败。请稍后重试，或联系管理员检查 webhook/短信网关。';
+    }
+    if (error.code === 'AUTH_CODE_INVALID') {
+      return '验证码错误，请检查后重试。';
+    }
+    if (error.code === 'AUTH_CODE_EXPIRED') {
+      return '验证码已过期，请重新获取验证码。';
+    }
     if (error.message) return error.message;
   }
   if (error instanceof Error && error.message) return error.message;

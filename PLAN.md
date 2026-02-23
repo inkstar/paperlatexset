@@ -8,6 +8,18 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 00:41] Phase 3.5 前端鉴权错误码文案补齐
+- 目标
+  - 将验证码通道相关错误码映射为可执行提示，减少用户侧排障成本。
+- 改动文件
+  - `App.tsx`
+  - `PLAN.md`
+- 验收标准
+  - `AUTH_EMAIL_NOT_CONFIGURED`、`AUTH_SMS_NOT_CONFIGURED`、`AUTH_CODE_DELIVERY_FAILED`、`AUTH_CODE_INVALID`、`AUTH_CODE_EXPIRED` 均显示明确中文提示。
+- 风险与回滚
+  - 风险：后端新增错误码未同步前端会回退为默认错误文案。
+  - 回滚：保留默认 `error.message` 兜底，不影响功能可用性。
+
 ### [UTC+8 2026-02-24 00:38] Phase 3.4 验证码通道配置化（webhook + 稳定错误码）
 - 目标
   - 将验证码申请从纯开发模式升级为“可配置通道 + 明确失败码”，为真实短信/邮件接入铺路。
