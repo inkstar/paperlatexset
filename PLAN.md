@@ -8,6 +8,26 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 01:21] Phase 4.0 M1 主链路 smoke（题库编辑 + 组卷导出）
+- 目标
+  - 固化 M1 核心链路回归：题库查询、组卷、导出、编辑一条命令可验证。
+  - 在 MinIO 不可用时保持导出功能可用，避免“能组卷但不能下载”。
+- 改动文件
+  - `server/src/routes/paperSets.ts`
+  - `scripts/seed-demo-data.mjs`
+  - `scripts/smoke-compose.sh`
+  - `package.json`
+  - `README.md`
+  - `Need.md`
+  - `PLAN.md`
+- 验收标准
+  - `npm run smoke:compose` 可在默认 `3130` 端口跑通。
+  - `export-latex`、`export-word` 在 MinIO 不可用时仍返回可下载内容。
+  - 演示数据可通过 `npm run db:seed:demo` 自动生成。
+- 风险与回滚
+  - 风险：演示数据会持续追加，长期会增加测试库体积。
+  - 回滚：改为定期清理 `SMOKE_DEMO` 数据或使用独立测试库。
+
 ### [UTC+8 2026-02-24 00:55] Phase 3.9 微信回调入口骨架与统一错误码
 - 目标
   - 补齐微信 OAuth 回调入口占位，统一“已配置但未实现换码”的错误语义。

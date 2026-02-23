@@ -110,11 +110,14 @@ questionsRouter.patch(
 
       await tx.questionKnowledgePoint.deleteMany({ where: { questionId } });
       for (const point of nextKnowledgePoints) {
-        const kp = await tx.knowledgePoint.upsert({
-          where: { name_parentId: { name: point, parentId: null } },
-          create: { name: point },
-          update: {},
+        const existingKp = await tx.knowledgePoint.findFirst({
+          where: { name: point, parentId: null },
         });
+        const kp =
+          existingKp ||
+          (await tx.knowledgePoint.create({
+            data: { name: point },
+          }));
         await tx.questionKnowledgePoint.create({
           data: { questionId, knowledgePointId: kp.id },
         });

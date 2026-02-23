@@ -15,10 +15,12 @@
     "smoke:auth:matrix": "bash scripts/smoke-auth-matrix.sh",
     "smoke:auth:full": "bash scripts/smoke-auth-full.sh",
     "smoke:auth:code": "bash scripts/smoke-auth-code.sh",
+    "smoke:compose": "bash scripts/smoke-compose.sh",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "db:bootstrap": "DOTENV_CONFIG_PATH=.env.server node -r dotenv/config scripts/bootstrap-db.mjs",
+    "db:seed:demo": "DOTENV_CONFIG_PATH=.env.server node -r dotenv/config scripts/seed-demo-data.mjs",
     "server:start": "DOTENV_CONFIG_PATH=.env.server tsx --tsconfig tsconfig.server.json server/src/index.ts"
   },
   "dependencies": {

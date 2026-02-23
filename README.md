@@ -138,6 +138,20 @@ SMOKE_SIGNING_SECRET='<JWT secret>' npm run smoke:auth:full
 npm run smoke:auth:code
 ```
 
+组卷主链路专项回归（自动种子数据 + 题库查询 + 组卷 + 导出 + 编辑）：
+```bash
+npm run smoke:compose
+```
+会自动执行：
+- `npm run db:seed:demo` 写入演示题目
+- `GET /api/questions?sourceExam=SMOKE_DEMO`
+- `POST /api/papersets` + `batch-select`
+- `POST /api/papersets/:id/export-latex`
+- `POST /api/papersets/:id/export-word`
+- `PATCH /api/questions/:id`
+
+说明：导出接口在 MinIO 不可用时也会继续返回下载内容，仅会把归档任务记录为 `failed`。
+
 ## 日志目录
 
 - 项目根目录固定使用 `logs/`

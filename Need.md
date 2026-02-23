@@ -24,8 +24,8 @@
   - 需要：短信服务商 appId/appSecret/签名模板（或短信网关 webhook）
   - 当前现状：默认 `AUTH_CODE_DEBUG=true`，可返回 `debugCode`
 - 联调测试账号
-  - 状态：待提供
-  - 需要：`teacher`、`admin` 两类账号（邮箱或手机号）
+  - 状态：可选（已有自动种子脚本）
+  - 说明：可用 `npm run db:seed:demo` 自动生成演示教师账号与题目数据
 
 ### P2（微信登录接入前必须提供）
 

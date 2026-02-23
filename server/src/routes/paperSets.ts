@@ -15,6 +15,33 @@ import { asyncHandler, fail, ok } from '../utils/http';
 export const paperSetsRouter = Router();
 const execFileAsync = promisify(execFile);
 
+async function tryArchiveExport(paperSetId: string, type: 'pdf' | 'latex' | 'word', payload: Buffer | string, mimeType: string) {
+  try {
+    const buffer = Buffer.isBuffer(payload) ? payload : Buffer.from(payload, 'utf-8');
+    const ext = type === 'latex' ? 'tex' : type === 'word' ? 'docx' : 'pdf';
+    const objectKey = `exports/${paperSetId}/${Date.now()}-paper.${ext}`;
+    await uploadBuffer(objectKey, buffer, mimeType);
+    await prisma.exportJob.create({
+      data: {
+        paperSetId,
+        type,
+        status: 'success',
+        objectKey,
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    await prisma.exportJob.create({
+      data: {
+        paperSetId,
+        type,
+        status: 'failed',
+        message: `archive skipped: ${message}`,
+      },
+    });
+  }
+}
+
 paperSetsRouter.post(
   '/',
   requireRole([UserRole.admin, UserRole.teacher]),
@@ -102,17 +129,7 @@ paperSetsRouter.post(
     }
 
     const pdfBuffer = await fs.readFile(outPath);
-    const objectKey = `exports/${paperSet.id}/${Date.now()}-paper.pdf`;
-    await uploadBuffer(objectKey, pdfBuffer, 'application/pdf');
-
-    await prisma.exportJob.create({
-      data: {
-        paperSetId,
-        type: 'pdf',
-        status: 'success',
-        objectKey,
-      },
-    });
+    await tryArchiveExport(paperSetId, 'pdf', pdfBuffer, 'application/pdf');
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${paperSet.name}.pdf"`);
@@ -135,17 +152,7 @@ paperSetsRouter.post(
 
     const questions = paperSet.items.map((x: any) => x.snapshot as any);
     const latex = buildLatex(paperSet.name, questions);
-    const objectKey = `exports/${paperSet.id}/${Date.now()}-paper.tex`;
-    await uploadBuffer(objectKey, Buffer.from(latex, 'utf-8'), 'text/plain');
-
-    await prisma.exportJob.create({
-      data: {
-        paperSetId,
-        type: 'latex',
-        status: 'success',
-        objectKey,
-      },
-    });
+    await tryArchiveExport(paperSetId, 'latex', latex, 'text/plain');
 
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${paperSet.name}.tex"`);
@@ -168,17 +175,12 @@ paperSetsRouter.post(
 
     const questions = paperSet.items.map((x: any) => x.snapshot as any);
     const docBuffer = await buildWord(paperSet.name, questions);
-    const objectKey = `exports/${paperSet.id}/${Date.now()}-paper.docx`;
-    await uploadBuffer(objectKey, docBuffer, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-
-    await prisma.exportJob.create({
-      data: {
-        paperSetId,
-        type: 'word',
-        status: 'success',
-        objectKey,
-      },
-    });
+    await tryArchiveExport(
+      paperSetId,
+      'word',
+      docBuffer,
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    );
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename="${paperSet.name}.docx"`);
