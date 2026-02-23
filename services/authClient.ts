@@ -13,10 +13,19 @@ let currentConfig: AuthClientConfig = {
   bearerToken: '',
 };
 
+function sanitizeBearerToken(token: string) {
+  const normalized = String(token || '').replace(/^Bearer\s+/i, '').trim();
+  if (!normalized) return '';
+  // Keep only visible ASCII token chars to avoid fetch header validation errors.
+  if (!/^[A-Za-z0-9\-._~+/=]+$/.test(normalized)) return '';
+  return normalized;
+}
+
 export function setAuthClientConfig(next: Partial<AuthClientConfig>) {
   currentConfig = {
     ...currentConfig,
     ...next,
+    bearerToken: next.bearerToken !== undefined ? sanitizeBearerToken(next.bearerToken) : currentConfig.bearerToken,
   };
 }
 
@@ -25,7 +34,7 @@ export function getAuthClientConfig(): AuthClientConfig {
 }
 
 export function getAuthHeaders(): Record<string, string> {
-  const token = currentConfig.bearerToken.trim();
+  const token = sanitizeBearerToken(currentConfig.bearerToken);
   if (token) {
     return {
       Authorization: `Bearer ${token}`,

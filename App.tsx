@@ -64,6 +64,7 @@ import {
   AUTH_BEARER_STORAGE_KEY,
   AUTH_ROLE_STORAGE_KEY,
   DevAuthRole,
+  getAuthClientConfig,
   getAuthHeaders,
   setAuthClientConfig,
 } from './services/authClient';
@@ -210,6 +211,10 @@ export default function App() {
     localStorage.setItem(AUTH_ROLE_STORAGE_KEY, authRole);
     localStorage.setItem(AUTH_BEARER_STORAGE_KEY, authBearerToken);
     setAuthClientConfig({ role: authRole, bearerToken: authBearerToken });
+    const sanitized = getAuthClientConfig().bearerToken;
+    if (authBearerToken && !sanitized) {
+      setAuthMessage('检测到 Bearer token 格式不合法，已自动忽略并回退为角色鉴权。');
+    }
   }, [authRole, authBearerToken]);
 
   const identityInput = authIdentity.trim();

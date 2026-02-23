@@ -45,6 +45,10 @@ function createClientError(message: string, code?: string): ClientError {
 }
 
 function getFriendlyErrorMessage(error: unknown) {
+  const message = (error as Error | undefined)?.message || '';
+  if (message.includes('did not match the expected pattern')) {
+    return '请求头格式异常（通常是 Bearer token 格式不合法）。请点击右上角“登录/鉴权”，清空 token 后重试。';
+  }
   const code = (error as ClientError | undefined)?.code;
   if (code === 'AUTH_REQUIRED') {
     return '当前操作需要登录。请点击右上角“登录/鉴权”后重试。';
@@ -55,7 +59,7 @@ function getFriendlyErrorMessage(error: unknown) {
   if (code === 'BACKEND_UNREACHABLE') {
     return '无法连接后端服务，请确认后端已启动（默认 3100 端口）。';
   }
-  return (error as Error)?.message || '请求失败';
+  return message || '请求失败';
 }
 
 export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) => {
