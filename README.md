@@ -44,6 +44,12 @@ npm run prisma:generate
 npm run prisma:migrate
 ```
 
+如果你使用 Supabase pooler（6543）且本地迁移命令不稳定，可改用：
+```bash
+npm run db:bootstrap
+```
+该命令会按 `prisma/schema.prisma` 生成并执行建表 SQL（幂等，已存在对象会跳过）。
+
 ### 4) 启动前后端
 
 ```bash

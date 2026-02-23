@@ -8,6 +8,24 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 00:10] Phase 3.3 Supabase 连接打通与建表自愈脚本
+- 目标
+  - 打通 Supabase pooler 连接并恢复 `questions` 主链路可用。
+  - 提供可重复执行的初始化建表脚本，避免 `prisma db push` 在 pooler 场景卡住。
+- 改动文件
+  - `scripts/bootstrap-db.mjs`
+  - `package.json`
+  - `README.md`
+  - `Need.md`
+  - `PLAN.md`
+- 验收标准
+  - `/api/v1/health` 返回 200。
+  - `/api/questions?page=1&pageSize=1` 返回 200（允许空列表）。
+  - 可通过 `npm run db:bootstrap` 重放建表，已存在对象自动跳过。
+- 风险与回滚
+  - 风险：脚本基于 SQL 语句拆分执行，后续若引入复杂 SQL（函数/触发器）需增强解析器。
+  - 回滚：保留脚本仅用于初始化，复杂迁移回退到手工 SQL 或专用迁移工具链。
+
 ### [UTC+8 2026-02-23 12:25] Phase 3.2 鉴权失败前端可恢复路径 + Need 清单化
 - 目标
   - 在组卷页请求遇到 `AUTH_REQUIRED/AUTH_FORBIDDEN` 时，自动引导用户进入登录弹窗，减少“报错后无下一步”问题。
