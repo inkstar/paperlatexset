@@ -23,6 +23,8 @@ const envSchema = z.object({
   MINIO_ACCESS_KEY: z.string().min(1),
   MINIO_SECRET_KEY: z.string().min(1),
   MINIO_BUCKET: z.string().default('paper-assets'),
+  STORAGE_FALLBACK_LOCAL: z.string().default('true').transform((v) => v === 'true'),
+  STORAGE_FALLBACK_DIR: z.string().default('.local-storage'),
   DEFAULT_PROVIDER: z.enum(['gemini', 'glm']).default('gemini'),
   GEMINI_API_KEY: z.string().optional(),
   GLM_API_KEY: z.string().optional(),

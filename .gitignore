@@ -29,3 +29,4 @@ dist-ssr
 .env.server
 server-dist
 prisma/migrations
+.local-storage

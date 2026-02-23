@@ -8,6 +8,24 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 01:49] Phase 4.2 存储本地降级（MinIO 不可用时上传识别不中断）
+- 目标
+  - 在开发环境中支持对象存储自动降级，避免 MinIO 不可用阻塞上传识别。
+- 改动文件
+  - `server/src/config/env.ts`
+  - `server/src/services/storageService.ts`
+  - `.env.server.example`
+  - `README.md`
+  - `Need.md`
+  - `PLAN.md`
+- 验收标准
+  - `STORAGE_FALLBACK_LOCAL=true` 且 MinIO 不可用时，`/api/papers/upload` 仍可成功。
+  - 上传后的文件可通过识别流程读取（使用本地降级目录）。
+  - 文档明确开发/生产配置差异。
+- 风险与回滚
+  - 风险：本地降级目录会累积文件，需定期清理。
+  - 回滚：设置 `STORAGE_FALLBACK_LOCAL=false`，恢复严格依赖 MinIO。
+
 ### [UTC+8 2026-02-24 01:45] Phase 4.1 上传识别链路诊断增强 + smoke
 - 目标
   - 固化上传识别链路错误码：存储不可用、provider 未配置都可稳定诊断。

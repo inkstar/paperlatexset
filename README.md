@@ -35,6 +35,9 @@
   - `AUTH_CODE_WEBHOOK_URL=`（配置后会把验证码推送到该 webhook）
   - `AUTH_CODE_EMAIL_ENABLED=true|false`
   - `AUTH_CODE_PHONE_ENABLED=true|false`
+- 存储降级配置（开发建议开启）：
+  - `STORAGE_FALLBACK_LOCAL=true|false`（MinIO 不可用时是否自动落盘到本地）
+  - `STORAGE_FALLBACK_DIR=.local-storage`（本地落盘目录）
 
 ### 2) 安装依赖
 
@@ -189,7 +192,8 @@ npm run preview:full
 
 如果启动日志提示 `MinIO is not reachable`，说明对象存储未连接：
 - `POST /api/analyze`、`POST /api/parse-latex` 仍可用。
-- 上传与入库识别链路（如 `/api/papers/upload`、`/api/papers/:id/recognize`）会返回 `STORAGE_UNAVAILABLE`，需先启动/修正 MinIO。
+- 若 `STORAGE_FALLBACK_LOCAL=true`，上传与识别会自动降级到本地目录（默认 `.local-storage/`）。
+- 若关闭本地降级，上传与入库识别链路会返回 `STORAGE_UNAVAILABLE`。
 
 ## 错误码排查（M1）
 
