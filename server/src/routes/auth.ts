@@ -5,6 +5,7 @@ import { asyncHandler, fail, ok } from '../utils/http';
 import { hashPassword, verifyPassword } from '../services/passwordService';
 import { issueAccessToken } from '../services/tokenService';
 import { deliverLoginCode, LoginCodeDeliveryError } from '../services/loginCodeDeliveryService';
+import { env } from '../config/env';
 
 type LoginCodeRecord = {
   code: string;
@@ -173,13 +174,30 @@ authRouter.post(
   }),
 );
 
-authRouter.get('/wechat/url', (_req, res) => {
-  return fail(
-    res,
-    501,
-    'wechat login is not configured yet. please set WECHAT_APP_ID/WECHAT_APP_SECRET and callback route.',
-    'AUTH_WECHAT_NOT_CONFIGURED',
-  );
+authRouter.get('/wechat/url', (req, res) => {
+  if (!env.WECHAT_APP_ID || !env.WECHAT_APP_SECRET || !env.WECHAT_REDIRECT_URI) {
+    return fail(
+      res,
+      501,
+      'wechat login is not configured yet. please set WECHAT_APP_ID/WECHAT_APP_SECRET and callback route.',
+      'AUTH_WECHAT_NOT_CONFIGURED',
+    );
+  }
+
+  const state = String(req.query?.state || '').trim() || randomState();
+  const redirectUri = encodeURIComponent(env.WECHAT_REDIRECT_URI);
+  const authorizeUrl =
+    `https://open.weixin.qq.com/connect/qrconnect?appid=${encodeURIComponent(env.WECHAT_APP_ID)}` +
+    `&redirect_uri=${redirectUri}` +
+    '&response_type=code' +
+    '&scope=snsapi_login' +
+    `&state=${encodeURIComponent(state)}#wechat_redirect`;
+
+  return ok(res, {
+    authorizeUrl,
+    state,
+    redirectUri: env.WECHAT_REDIRECT_URI,
+  });
 });
 
 authRouter.post('/wechat/login', (_req, res) => {
@@ -197,4 +215,8 @@ function handleAuthDbError(res: Parameters<typeof fail>[0], error: any) {
     return fail(res, 503, 'database is unavailable. start PostgreSQL and retry.', 'AUTH_DB_UNAVAILABLE');
   }
   throw error;
+}
+
+function randomState() {
+  return Math.random().toString(36).slice(2, 12);
 }

@@ -8,6 +8,22 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 00:46] Phase 3.7 微信登录授权 URL 可用化
+- 目标
+  - 将微信登录从固定占位提升到“可生成标准授权链接”，减少后续 OAuth 接入工作量。
+- 改动文件
+  - `server/src/config/env.ts`
+  - `server/src/routes/auth.ts`
+  - `README.md`
+  - `Need.md`
+  - `PLAN.md`
+- 验收标准
+  - 配置 `WECHAT_APP_ID/WECHAT_APP_SECRET/WECHAT_REDIRECT_URI` 后，`GET /api/auth/wechat/url` 返回 `authorizeUrl/state`。
+  - 未配置时继续返回 `AUTH_WECHAT_NOT_CONFIGURED`。
+- 风险与回滚
+  - 风险：state 仅本地生成，后续回调阶段需配套防重放校验。
+  - 回滚：恢复固定 501 占位逻辑，不影响既有登录方式。
+
 ### [UTC+8 2026-02-24 00:44] Phase 3.6 验证码通道专项 smoke 自动化
 - 目标
   - 固化验证码通道行为回归：debug 模式可返回 `debugCode`，关闭 debug 后返回稳定未配置错误码。

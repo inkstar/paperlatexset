@@ -244,4 +244,5 @@ npm run preview:full
 - 邮箱/手机号验证码登录：`POST /api/auth/code/login`
   - body: `{ "email": "...", "code": "123456" }` 或 `{ "phone": "...", "code": "123456" }`
 - 微信登录预留：`GET /api/auth/wechat/url`、`POST /api/auth/wechat/login`
-  - 目前返回 `AUTH_WECHAT_NOT_CONFIGURED`，用于后续 OAuth 接入。
+  - `GET /api/auth/wechat/url`：配置了 `WECHAT_APP_ID/WECHAT_APP_SECRET/WECHAT_REDIRECT_URI` 后返回可用授权链接。
+  - `POST /api/auth/wechat/login`：目前仍返回 `AUTH_WECHAT_NOT_CONFIGURED`（下一步实现 code 换 token）。
