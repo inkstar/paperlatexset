@@ -95,6 +95,16 @@ SMOKE_BEARER_TOKEN='<your-access-token>' npm run smoke:auth
 可选参数：
 - `SMOKE_EXPECTED_ROLE=admin|teacher|viewer`：断言服务端映射角色。
 - `SMOKE_ROLE_CLAIM_PATH=app_metadata.role`：指定 token 原始角色 claim 路径（默认同后端）。
+- `SMOKE_GENERATE_TOKEN_ROLE=admin|teacher|viewer`：自动生成本地测试 token（需 `SMOKE_SIGNING_SECRET`）。
+- `SMOKE_SIGNING_SECRET=<secret>`：测试 token 的签名密钥（需与服务端验签密钥一致）。
+
+一键角色矩阵（自动生成 `admin/teacher/viewer` 三个 token）：
+```bash
+SMOKE_SIGNING_SECRET='<JWT secret>' npm run smoke:auth:matrix
+```
+可选补充：
+- `SMOKE_TOKEN_ISSUER=<issuer>`
+- `SMOKE_TOKEN_AUDIENCE=<audience>`
 
 ## 日志目录
 

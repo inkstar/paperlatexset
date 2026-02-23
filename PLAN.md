@@ -8,6 +8,24 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-23 11:12] Phase 2.7 Auth smoke 自动签发 token 与角色矩阵
+- 目标
+  - 降低对外部 token 依赖，让严格鉴权回归可在本地一键跑通。
+  - 固化 `admin/teacher/viewer` 三角色权限矩阵验证。
+- 改动文件
+  - `scripts/smoke-auth.sh`
+  - `scripts/smoke-auth-matrix.sh`
+  - `package.json`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - `smoke:auth` 支持 `SMOKE_GENERATE_TOKEN_ROLE + SMOKE_SIGNING_SECRET` 自动签发测试 token。
+  - `npm run smoke:auth:matrix` 可顺序验证三角色并在权限异常时失败退出。
+  - 保持 `SMOKE_BEARER_TOKEN` 手工 token 路径兼容。
+- 风险与回滚
+  - 风险：本地签名密钥与服务端验签配置不一致会导致误判为鉴权失败。
+  - 回滚：回退到 `SMOKE_BEARER_TOKEN` 人工注入模式，保留脚本框架。
+
 ### [UTC+8 2026-02-23 11:08] Phase 2.6 Bearer token 预期角色断言与 claim 对照
 - 目标
   - 为 `smoke:auth` 增加预期角色断言，避免 token 角色映射偏差被忽略。

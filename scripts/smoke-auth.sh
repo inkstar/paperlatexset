@@ -4,6 +4,47 @@ set -euo pipefail
 API_BASE="${SMOKE_API_BASE:-http://localhost:3100}"
 ROLE_CLAIM_PATH="${SMOKE_ROLE_CLAIM_PATH:-app_metadata.role}"
 
+generate_test_token() {
+  local role="$1"
+  local secret="${SMOKE_SIGNING_SECRET:-}"
+  if [ -z "$secret" ]; then
+    echo ""
+    return 0
+  fi
+
+  SMOKE_SIGNING_SECRET="$secret" \
+  SMOKE_EXPECTED_ROLE="$role" \
+  SMOKE_TOKEN_ISSUER="${SMOKE_TOKEN_ISSUER:-}" \
+  SMOKE_TOKEN_AUDIENCE="${SMOKE_TOKEN_AUDIENCE:-}" \
+  node -e '
+const jwt = require("jsonwebtoken");
+const role = process.env.SMOKE_EXPECTED_ROLE || "teacher";
+const payload = {
+  sub: `smoke-${role}`,
+  email: `smoke-${role}@example.com`,
+  role,
+  app_metadata: { role },
+  user_metadata: { role }
+};
+const opts = {};
+if (process.env.SMOKE_TOKEN_ISSUER) opts.issuer = process.env.SMOKE_TOKEN_ISSUER;
+if (process.env.SMOKE_TOKEN_AUDIENCE) opts.audience = process.env.SMOKE_TOKEN_AUDIENCE;
+const token = jwt.sign(payload, process.env.SMOKE_SIGNING_SECRET, { algorithm: "HS256", expiresIn: "30m", ...opts });
+process.stdout.write(token);
+'
+}
+
+if [ -z "${SMOKE_BEARER_TOKEN:-}" ] && [ -n "${SMOKE_GENERATE_TOKEN_ROLE:-}" ]; then
+  GENERATED_TOKEN="$(generate_test_token "$SMOKE_GENERATE_TOKEN_ROLE")"
+  if [ -n "$GENERATED_TOKEN" ]; then
+    export SMOKE_BEARER_TOKEN="$GENERATED_TOKEN"
+    echo "[smoke-auth] generated test token for role=$SMOKE_GENERATE_TOKEN_ROLE"
+  else
+    echo "[smoke-auth] FAIL: cannot generate token (missing SMOKE_SIGNING_SECRET)"
+    exit 1
+  fi
+fi
+
 echo "[smoke-auth] check backend reachable"
 curl -fsS "$API_BASE/api/v1/health" >/tmp/smoke-auth-health.json
 
@@ -91,7 +132,7 @@ try {
     fi
   fi
 else
-  echo "[smoke-auth] SKIP: set SMOKE_BEARER_TOKEN to verify authenticated path"
+  echo "[smoke-auth] SKIP: set SMOKE_BEARER_TOKEN, or SMOKE_GENERATE_TOKEN_ROLE + SMOKE_SIGNING_SECRET"
 fi
 
 echo "[smoke-auth] DONE"
