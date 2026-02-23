@@ -88,6 +88,10 @@ npm run smoke:auth
 ```bash
 SMOKE_BEARER_TOKEN='<your-access-token>' npm run smoke:auth
 ```
+`smoke:auth` 会自动检查：
+- 无 token 时返回 `AUTH_REQUIRED`
+- 有 token 时 `/api/v1/me` 返回 `auth.mode=bearer`
+- 基于 token 角色验证 `/api/v1/authz/admin` 权限（admin=200，非 admin=403）
 
 ## 日志目录
 
@@ -173,3 +177,4 @@ npm run preview:full
 > - `GET /api/v1/stats`
 > - `GET /api/v1/me`
 > - `GET /api/v1/health`（公开探活，不要求 token）
+> - `GET /api/v1/authz/admin`（鉴权回归用 admin-only 端点）

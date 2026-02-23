@@ -12,3 +12,11 @@ authInfoRouter.get(
     return ok(res, { user: req.user || null, auth: req.authContext || null });
   }),
 );
+
+authInfoRouter.get(
+  '/authz/admin',
+  requireRole([UserRole.admin]),
+  asyncHandler(async (req, res) => {
+    return ok(res, { allowed: true, requiredRole: UserRole.admin, user: req.user || null });
+  }),
+);

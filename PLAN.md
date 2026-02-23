@@ -8,6 +8,23 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-23 10:58] Phase 2.5 Bearer token 角色权限矩阵回归
+- 目标
+  - 在严格鉴权模式下，补齐有 token 场景的角色权限自动校验。
+  - 提供不依赖数据库的 admin-only 诊断端点，稳定验证 `AUTH_FORBIDDEN`。
+- 改动文件
+  - `server/src/routes/authInfo.ts`
+  - `scripts/smoke-auth.sh`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - `SMOKE_BEARER_TOKEN` 存在时，`smoke:auth` 能识别 `/api/v1/me` 的 token 角色。
+  - `smoke:auth` 自动校验 `/api/v1/authz/admin`：admin 返回 200，非 admin 返回 `AUTH_FORBIDDEN`。
+  - 无 token 场景仍维持 `AUTH_REQUIRED` 验收。
+- 风险与回滚
+  - 风险：不同 token 结构导致角色字段缺失。
+  - 回滚：保留 `/api/v1/me` 原始输出，脚本回退为仅校验 bearer 可用性。
+
 ### [UTC+8 2026-02-23 10:23] Phase 2.4 启动链路稳定性修复（server tsconfig + 路由导入收敛）
 - 目标
   - 修复后端在当前环境中启动无响应的问题，确保 `smoke` 自动拉起稳定可用。

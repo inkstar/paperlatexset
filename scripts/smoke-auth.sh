@@ -26,6 +26,33 @@ if [ -n "${SMOKE_BEARER_TOKEN:-}" ]; then
     echo "$WITH_TOKEN_RESP"
     exit 1
   fi
+
+  TOKEN_ROLE="$(echo "$WITH_TOKEN_RESP" | rg -o '"role":"[^"]+"' | head -n 1 | cut -d: -f2 | tr -d '"')"
+  if [ -z "$TOKEN_ROLE" ]; then
+    echo "[smoke-auth] FAIL: cannot detect role from /api/v1/me response"
+    echo "$WITH_TOKEN_RESP"
+    exit 1
+  fi
+  echo "[smoke-auth] detected role: $TOKEN_ROLE"
+
+  ADMIN_AUTHZ_RESP="$(curl -sS -i -H "Authorization: Bearer ${SMOKE_BEARER_TOKEN}" "$API_BASE/api/v1/authz/admin")"
+  if [ "$TOKEN_ROLE" = "admin" ]; then
+    if echo "$ADMIN_AUTHZ_RESP" | rg -q "HTTP/1.1 200" && echo "$ADMIN_AUTHZ_RESP" | rg -q '"allowed":true'; then
+      echo "[smoke-auth] PASS: admin role can access /api/v1/authz/admin"
+    else
+      echo "[smoke-auth] FAIL: admin role should access /api/v1/authz/admin"
+      echo "$ADMIN_AUTHZ_RESP"
+      exit 1
+    fi
+  else
+    if echo "$ADMIN_AUTHZ_RESP" | rg -q "HTTP/1.1 403" && echo "$ADMIN_AUTHZ_RESP" | rg -q '"errorCode":"AUTH_FORBIDDEN"'; then
+      echo "[smoke-auth] PASS: non-admin role blocked by /api/v1/authz/admin"
+    else
+      echo "[smoke-auth] FAIL: non-admin role should be forbidden on /api/v1/authz/admin"
+      echo "$ADMIN_AUTHZ_RESP"
+      exit 1
+    fi
+  fi
 else
   echo "[smoke-auth] SKIP: set SMOKE_BEARER_TOKEN to verify authenticated path"
 fi
