@@ -61,3 +61,7 @@ export async function getObjectBuffer(objectKey: string): Promise<Buffer> {
   }
   return Buffer.concat(chunks);
 }
+
+export function getStorageMode() {
+  return storageMode;
+}

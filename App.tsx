@@ -50,6 +50,8 @@ import { QuestionTable } from './components/QuestionTable';
 import { PREAMBLE_TEMPLATE } from './constants';
 import { ComposerPage } from './components/ComposerPage';
 import {
+  AuthCapabilities,
+  fetchAuthCapabilities,
   fetchWechatAuthorizeUrl,
   fetchCurrentUser,
   loginWithCode,
@@ -171,6 +173,7 @@ export default function App() {
   const [authMessage, setAuthMessage] = useState('');
   const [currentAuthSummary, setCurrentAuthSummary] = useState('');
   const [wechatAuthorizeUrl, setWechatAuthorizeUrl] = useState('');
+  const [authCapabilities, setAuthCapabilities] = useState<AuthCapabilities | null>(null);
 
   useEffect(() => {
     const storedRole = localStorage.getItem(AUTH_ROLE_STORAGE_KEY) as DevAuthRole | null;
@@ -281,6 +284,21 @@ export default function App() {
       setAuthLoading(false);
     }
   };
+
+  const handleFetchAuthCapabilities = async () => {
+    try {
+      const data = await fetchAuthCapabilities();
+      setAuthCapabilities(data);
+    } catch {
+      setAuthCapabilities(null);
+    }
+  };
+
+  useEffect(() => {
+    if (showAuthModal) {
+      handleFetchAuthCapabilities();
+    }
+  }, [showAuthModal]);
 
   useEffect(() => {
     const saved = localStorage.getItem('math_latex_history_v2');
@@ -642,8 +660,23 @@ export default function App() {
               </div>
 
               <div className="border-t pt-3">
+                {authCapabilities && (
+                  <div className="mb-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600 space-y-1">
+                    <div>服务能力：</div>
+                    <div>验证码：email {authCapabilities.codeLogin.emailEnabled ? 'on' : 'off'} / phone {authCapabilities.codeLogin.phoneEnabled ? 'on' : 'off'} / debug {authCapabilities.codeLogin.debugEnabled ? 'on' : 'off'}</div>
+                    <div>微信登录：{authCapabilities.wechat.configured ? 'configured' : 'not configured'}</div>
+                    <div>存储模式：{authCapabilities.storage.mode}（fallback {authCapabilities.storage.fallbackLocalEnabled ? 'on' : 'off'}）</div>
+                  </div>
+                )}
                 <div className="text-xs text-gray-500 mb-2">微信登录（预留）</div>
                 <div className="flex gap-2">
+                  <button
+                    onClick={handleFetchAuthCapabilities}
+                    disabled={authLoading}
+                    className="px-4 py-2 border border-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    刷新服务状态
+                  </button>
                   <button
                     onClick={handleFetchWechatUrl}
                     disabled={authLoading}

@@ -110,3 +110,33 @@ export async function fetchCurrentUser(): Promise<{ user: LoginUser; auth: { mod
   }
   return json.data;
 }
+
+export type AuthCapabilities = {
+  auth: { devFallbackEnabled: boolean };
+  codeLogin: {
+    debugEnabled: boolean;
+    emailEnabled: boolean;
+    phoneEnabled: boolean;
+    webhookConfigured: boolean;
+  };
+  wechat: { configured: boolean };
+  storage: { mode: 'minio' | 'local'; fallbackLocalEnabled: boolean; fallbackDir: string };
+};
+
+export async function fetchAuthCapabilities(): Promise<AuthCapabilities> {
+  let res: Response;
+  try {
+    res = await fetch('/api/auth/capabilities');
+  } catch {
+    throw new ApiError('无法连接后端服务，请确认后端已启动（默认 3100 端口）。', { code: 'BACKEND_UNREACHABLE' });
+  }
+  const json = await parseJson(res);
+  if (!res.ok || json?.error) {
+    throw new ApiError(json?.error || 'Request failed', {
+      code: json?.errorCode || `HTTP_${res.status}`,
+      status: res.status,
+      details: json?.details || null,
+    });
+  }
+  return json.data;
+}

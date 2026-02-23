@@ -8,6 +8,24 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 01:59] Phase 4.3 服务能力探测（Capabilities）与前端状态面板
+- 目标
+  - 提供公开能力探测接口，减少“到底配没配好”的盲调。
+  - 在前端登录弹窗展示后端实时能力状态（验证码/微信/存储）。
+- 改动文件
+  - `server/src/routes/auth.ts`
+  - `server/src/services/storageService.ts`
+  - `services/authApi.ts`
+  - `App.tsx`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - `GET /api/auth/capabilities` 返回稳定结构。
+  - 前端登录弹窗打开后可展示服务能力，并支持手动刷新。
+- 风险与回滚
+  - 风险：能力信息公开可能暴露配置状态（不含密钥）。
+  - 回滚：将该接口改为仅鉴权用户可见，前端隐藏状态面板。
+
 ### [UTC+8 2026-02-24 01:49] Phase 4.2 存储本地降级（MinIO 不可用时上传识别不中断）
 - 目标
   - 在开发环境中支持对象存储自动降级，避免 MinIO 不可用阻塞上传识别。

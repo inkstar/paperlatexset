@@ -256,6 +256,7 @@ npm run preview:full
 前端入口：
 - 顶部“登录/鉴权”按钮可直接执行邮箱注册、邮箱登录、验证码登录，并自动写入 Bearer token。
 - 登录弹窗支持“获取微信登录链接”，会调用后端 `/api/auth/wechat/url`。
+- 登录弹窗会读取 `/api/auth/capabilities` 并显示当前服务能力（验证码通道、微信配置、存储模式）。
 
 - 邮箱注册：`POST /api/auth/email/register`
   - body: `{ "email": "...", "password": "...", "name": "..." }`
@@ -275,3 +276,5 @@ npm run preview:full
   - `GET /api/auth/wechat/url`：配置了 `WECHAT_APP_ID/WECHAT_APP_SECRET/WECHAT_REDIRECT_URI` 后返回可用授权链接。
   - `GET /api/auth/wechat/callback`：微信回调占位入口（当前返回 `AUTH_WECHAT_EXCHANGE_NOT_IMPLEMENTED`）。
   - `POST /api/auth/wechat/login`：当前返回 `AUTH_WECHAT_EXCHANGE_NOT_IMPLEMENTED`（待实现 code 换 token）。
+- 服务能力探测：`GET /api/auth/capabilities`
+  - 返回验证码通道开关、微信配置状态、当前存储模式（`minio`/`local`）。

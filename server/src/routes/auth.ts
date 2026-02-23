@@ -6,6 +6,7 @@ import { hashPassword, verifyPassword } from '../services/passwordService';
 import { issueAccessToken } from '../services/tokenService';
 import { deliverLoginCode, LoginCodeDeliveryError } from '../services/loginCodeDeliveryService';
 import { env } from '../config/env';
+import { getStorageMode } from '../services/storageService';
 
 type LoginCodeRecord = {
   code: string;
@@ -18,6 +19,28 @@ const loginCodes = new Map<string, LoginCodeRecord>();
 const LOGIN_CODE_TTL_MS = 5 * 60 * 1000;
 
 export const authRouter = Router();
+
+authRouter.get('/capabilities', (_req, res) => {
+  return ok(res, {
+    auth: {
+      devFallbackEnabled: env.AUTH_DEV_FALLBACK,
+    },
+    codeLogin: {
+      debugEnabled: env.AUTH_CODE_DEBUG,
+      emailEnabled: env.AUTH_CODE_EMAIL_ENABLED,
+      phoneEnabled: env.AUTH_CODE_PHONE_ENABLED,
+      webhookConfigured: Boolean(env.AUTH_CODE_WEBHOOK_URL),
+    },
+    wechat: {
+      configured: Boolean(env.WECHAT_APP_ID && env.WECHAT_APP_SECRET && env.WECHAT_REDIRECT_URI),
+    },
+    storage: {
+      mode: getStorageMode(),
+      fallbackLocalEnabled: env.STORAGE_FALLBACK_LOCAL,
+      fallbackDir: env.STORAGE_FALLBACK_DIR,
+    },
+  });
+});
 
 authRouter.post(
   '/email/register',
