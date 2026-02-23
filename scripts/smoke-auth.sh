@@ -2,6 +2,7 @@
 set -euo pipefail
 
 API_BASE="${SMOKE_API_BASE:-http://localhost:3100}"
+ROLE_CLAIM_PATH="${SMOKE_ROLE_CLAIM_PATH:-app_metadata.role}"
 
 echo "[smoke-auth] check backend reachable"
 curl -fsS "$API_BASE/api/v1/health" >/tmp/smoke-auth-health.json
@@ -34,6 +35,42 @@ if [ -n "${SMOKE_BEARER_TOKEN:-}" ]; then
     exit 1
   fi
   echo "[smoke-auth] detected role: $TOKEN_ROLE"
+
+  CLAIM_ROLE="$(ROLE_CLAIM_PATH="$ROLE_CLAIM_PATH" node -e '
+const token = process.env.SMOKE_BEARER_TOKEN || "";
+const path = (process.env.ROLE_CLAIM_PATH || "app_metadata.role").split(".").filter(Boolean);
+function b64urlDecode(s) {
+  const norm = s.replace(/-/g, "+").replace(/_/g, "/");
+  const pad = "=".repeat((4 - (norm.length % 4 || 4)) % 4);
+  return Buffer.from(norm + pad, "base64").toString("utf8");
+}
+try {
+  const parts = token.split(".");
+  if (parts.length < 2) process.exit(0);
+  const payload = JSON.parse(b64urlDecode(parts[1]));
+  let cur = payload;
+  for (const key of path) {
+    if (!cur || typeof cur !== "object" || !(key in cur)) {
+      cur = "";
+      break;
+    }
+    cur = cur[key];
+  }
+  process.stdout.write(typeof cur === "string" ? cur : "");
+} catch {
+  process.exit(0);
+}
+')"
+  if [ -n "$CLAIM_ROLE" ]; then
+    echo "[smoke-auth] token claim role($ROLE_CLAIM_PATH): $CLAIM_ROLE"
+  else
+    echo "[smoke-auth] WARN: token claim role($ROLE_CLAIM_PATH) not found"
+  fi
+
+  if [ -n "${SMOKE_EXPECTED_ROLE:-}" ] && [ "$TOKEN_ROLE" != "$SMOKE_EXPECTED_ROLE" ]; then
+    echo "[smoke-auth] FAIL: expected mapped role=$SMOKE_EXPECTED_ROLE but got $TOKEN_ROLE"
+    exit 1
+  fi
 
   ADMIN_AUTHZ_RESP="$(curl -sS -i -H "Authorization: Bearer ${SMOKE_BEARER_TOKEN}" "$API_BASE/api/v1/authz/admin")"
   if [ "$TOKEN_ROLE" = "admin" ]; then

@@ -92,6 +92,9 @@ SMOKE_BEARER_TOKEN='<your-access-token>' npm run smoke:auth
 - 无 token 时返回 `AUTH_REQUIRED`
 - 有 token 时 `/api/v1/me` 返回 `auth.mode=bearer`
 - 基于 token 角色验证 `/api/v1/authz/admin` 权限（admin=200，非 admin=403）
+可选参数：
+- `SMOKE_EXPECTED_ROLE=admin|teacher|viewer`：断言服务端映射角色。
+- `SMOKE_ROLE_CLAIM_PATH=app_metadata.role`：指定 token 原始角色 claim 路径（默认同后端）。
 
 ## 日志目录
 

@@ -8,6 +8,22 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-23 11:08] Phase 2.6 Bearer token 预期角色断言与 claim 对照
+- 目标
+  - 为 `smoke:auth` 增加预期角色断言，避免 token 角色映射偏差被忽略。
+  - 增加 token 原始 claim 角色输出，帮助快速定位“claim 配置 vs 服务映射”不一致问题。
+- 改动文件
+  - `scripts/smoke-auth.sh`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - 支持 `SMOKE_EXPECTED_ROLE` 校验 `/api/v1/me` 映射角色。
+  - 支持 `SMOKE_ROLE_CLAIM_PATH` 输出 token 原始 claim 角色（默认 `app_metadata.role`）。
+  - 无 token 场景 `AUTH_REQUIRED` 验收不回归。
+- 风险与回滚
+  - 风险：部分第三方 token payload 非标准 JSON/base64url 结构导致 claim 解析为空。
+  - 回滚：claim 对照降级为提示项，不作为失败条件。
+
 ### [UTC+8 2026-02-23 10:58] Phase 2.5 Bearer token 角色权限矩阵回归
 - 目标
   - 在严格鉴权模式下，补齐有 token 场景的角色权限自动校验。
