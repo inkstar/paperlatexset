@@ -49,6 +49,13 @@ import { HistoryPanel } from './components/HistoryPanel';
 import { QuestionTable } from './components/QuestionTable';
 import { PREAMBLE_TEMPLATE } from './constants';
 import { ComposerPage } from './components/ComposerPage';
+import {
+  AUTH_BEARER_STORAGE_KEY,
+  AUTH_ROLE_STORAGE_KEY,
+  DevAuthRole,
+  getAuthHeaders,
+  setAuthClientConfig,
+} from './services/authClient';
 
 const uid = () => Math.random().toString(36).substring(2, 9);
 
@@ -123,6 +130,23 @@ export default function App() {
   const [isImporting, setIsImporting] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [rotation, setRotation] = useState(0);
+  const [authRole, setAuthRole] = useState<DevAuthRole>('teacher');
+  const [authBearerToken, setAuthBearerToken] = useState('');
+
+  useEffect(() => {
+    const storedRole = localStorage.getItem(AUTH_ROLE_STORAGE_KEY) as DevAuthRole | null;
+    const storedToken = localStorage.getItem(AUTH_BEARER_STORAGE_KEY) || '';
+    if (storedRole === 'admin' || storedRole === 'teacher' || storedRole === 'viewer') {
+      setAuthRole(storedRole);
+    }
+    setAuthBearerToken(storedToken);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(AUTH_ROLE_STORAGE_KEY, authRole);
+    localStorage.setItem(AUTH_BEARER_STORAGE_KEY, authBearerToken);
+    setAuthClientConfig({ role: authRole, bearerToken: authBearerToken });
+  }, [authRole, authBearerToken]);
 
   useEffect(() => {
     const saved = localStorage.getItem('math_latex_history_v2');
@@ -146,7 +170,7 @@ export default function App() {
 
     fetch('/api/client-events/open', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify(payload),
       keepalive: true,
     })
@@ -424,6 +448,34 @@ export default function App() {
           <span className="ml-2 px-1.5 py-0.5 bg-blue-50 text-[10px] text-blue-600 font-bold rounded uppercase tracking-wider border border-blue-100">v1.1.0</span>
         </div>
         <div className="flex items-center gap-4">
+          <div className="hidden xl:flex items-center gap-2 px-2 py-1.5 border border-gray-200 rounded-lg bg-gray-50">
+            <select
+              value={authRole}
+              onChange={(e) => setAuthRole(e.target.value as DevAuthRole)}
+              className="text-xs border border-gray-200 rounded px-2 py-1 bg-white"
+              title="开发角色（无 Bearer token 时生效）"
+            >
+              <option value="admin">admin</option>
+              <option value="teacher">teacher</option>
+              <option value="viewer">viewer</option>
+            </select>
+            <input
+              value={authBearerToken}
+              onChange={(e) => setAuthBearerToken(e.target.value)}
+              placeholder="Bearer token（可选）"
+              className="w-48 text-xs border border-gray-200 rounded px-2 py-1 bg-white"
+              title="填入后优先使用 Bearer 鉴权"
+            />
+            {authBearerToken && (
+              <button
+                onClick={() => setAuthBearerToken('')}
+                className="text-xs px-2 py-1 border border-gray-200 rounded bg-white hover:bg-gray-100"
+                title="清除 Bearer token"
+              >
+                清除
+              </button>
+            )}
+          </div>
           <div className="flex items-center bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setActiveView('extract')}

@@ -8,6 +8,24 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-23 11:34] Phase 2.9 前端开发鉴权面板（角色切换 + Bearer）
+- 目标
+  - 在前端直接支持 `admin/teacher/viewer` 切换，减少后端联调成本。
+  - 支持可选 Bearer token 注入，覆盖严格鉴权场景。
+- 改动文件
+  - `services/authClient.ts`
+  - `services/geminiService.ts`
+  - `App.tsx`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - 前端右上角可切换角色、输入/清除 Bearer token。
+  - `/api/analyze`、`/api/parse-latex`、`/api/client-events/open` 请求携带统一鉴权头。
+  - 角色和 token 配置可在刷新后保留（localStorage）。
+- 风险与回滚
+  - 风险：生产环境误用开发鉴权面板配置。
+  - 回滚：仅在开发构建显示该面板，生产隐藏。
+
 ### [UTC+8 2026-02-23 11:25] Phase 2.8 严格鉴权一键全流程回归脚本
 - 目标
   - 提供“单命令完成”严格鉴权回归（启动服务 -> 角色矩阵 -> 自动清理）。

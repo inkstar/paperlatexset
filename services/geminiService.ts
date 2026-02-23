@@ -1,4 +1,5 @@
 import { UploadedFile, QuestionItem } from '../types';
+import { getAuthHeaders } from './authClient';
 
 export class ApiError extends Error {
   code?: string;
@@ -27,6 +28,7 @@ async function postForm<T>(url: string, formData: FormData): Promise<T> {
   try {
     res = await fetch(url, {
       method: 'POST',
+      headers: getAuthHeaders(),
       body: formData,
     });
   } catch {
@@ -49,7 +51,7 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   try {
     res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify(body),
     });
   } catch {

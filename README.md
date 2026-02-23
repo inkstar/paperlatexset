@@ -53,6 +53,11 @@ npm run dev
 
 说明：后端启动脚本已固定使用 `tsconfig.server.json`，避免前端 `tsconfig` 选项影响服务启动稳定性。
 
+前端开发鉴权面板（右上角）：
+- 可直接切换 `admin / teacher / viewer`（无 Bearer token 时使用）。
+- 可填入 Bearer token（填入后优先使用 Bearer）。
+- 配置会保存在浏览器 `localStorage`，用于本地联调。
+
 ### 5) 一键 smoke 验证（可选）
 
 ```bash
