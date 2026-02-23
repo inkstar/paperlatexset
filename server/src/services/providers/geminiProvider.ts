@@ -5,7 +5,11 @@ import { ProviderResult, RecognitionProvider } from './types';
 
 function normalizeResult(rawText: string): ProviderResult {
   const parsed = JSON.parse(rawText || '{}');
-  const questions = Array.isArray(parsed.questions) ? parsed.questions : [];
+  const questions = Array.isArray(parsed)
+    ? parsed
+    : Array.isArray(parsed.questions)
+      ? parsed.questions
+      : [];
   return {
     questions: questions.map((q) => ({
       number: String(q.number || ''),

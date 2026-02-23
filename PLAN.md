@@ -8,6 +8,22 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 03:10] Phase 4.6.1 真实图片回归修复（Gemini 返回格式兼容 + 持久化稳定）
+- 目标
+  - 用 `test_image` 真实数据验证识别链路，并修复“识别成功但入库失败/题目数为0”的问题。
+- 改动文件
+  - `server/src/services/providers/geminiProvider.ts`
+  - `server/src/routes/papers.ts`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - 兼容 Gemini 返回 `[]` 与 `{ questions: [] }` 两种格式。
+  - 持久化失败返回 `RECOGNIZE_PERSIST_FAILED`，不再误报 provider 上游错误。
+  - 使用 `test_image` 实测：`questionsSaved > 0` 且 `/api/questions` 可查到结果。
+- 风险与回滚
+  - 风险：顺序写库替代交互事务后，极端故障下可能出现部分写入。
+  - 回滚：后续若切回事务模式，需先确认 Supabase pooler 兼容配置。
+
 ### [UTC+8 2026-02-24 02:42] Phase 4.6-4.9 识别诊断闭环 + E2E 回归 + 微信换码登录
 - 目标
   - 打通 Gemini 首次识别失败定位闭环：结构化日志、稳定错误码、有限重试、首调冷启动标记。

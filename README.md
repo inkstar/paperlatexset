@@ -246,6 +246,10 @@ npm run preview:full
   - 含义：识别调用前预检失败（配置或模型不匹配）。
   - 处理：检查 provider 配置和模型设置。
 
+- `RECOGNIZE_PERSIST_FAILED`
+  - 含义：模型识别成功，但入库持久化失败（数据库事务/约束问题）。
+  - 处理：查看后端日志中的 `x-request-id`，优先排查数据库连接与事务超时。
+
 提示：后端响应头会返回 `x-request-id`，可用于在 `logs/access-YYYY-MM-DD.log` 中定位同一请求。
 鉴权相关请求会返回 `x-auth-mode`（`bearer` 或 `dev_fallback`），可用于确认当前鉴权路径。
 

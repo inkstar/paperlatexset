@@ -164,53 +164,53 @@ papersRouter.post(
       );
       const cost = estimateCost(provider.name, result.usage.inputTokens, result.usage.outputTokens);
 
-      await prisma.$transaction(async (tx) => {
-        await tx.question.deleteMany({ where: { paperId } });
-        for (const q of result.questions) {
-          const question = await tx.question.create({
-            data: {
-              paperId,
-              numberRaw: q.number,
-              numberNormalized: q.number,
-              stemText: q.content.replace(/\$[^$]*\$/g, '').trim(),
-              stemLatex: q.content,
-              questionType: q.type,
-              sourceExam: paper.sourceExam,
-              sourceYear: paper.sourceYear,
-            },
-          });
-
-          const kpName = q.knowledgePoint || '未分类';
-          const existingKp = await tx.knowledgePoint.findFirst({
-            where: { name: kpName, parentId: null },
-          });
-          const kp =
-            existingKp ||
-            (await tx.knowledgePoint.create({
-              data: { name: kpName },
-            }));
-
-          await tx.questionKnowledgePoint.create({
-            data: {
-              questionId: question.id,
-              knowledgePointId: kp.id,
-            },
-          });
-          questionsSaved += 1;
-        }
-
-        await tx.recognitionLog.create({
+      await prisma.question.deleteMany({ where: { paperId } });
+      for (const q of result.questions) {
+        const numberText = String(q.number || '').trim() || String(questionsSaved + 1);
+        const contentText = String(q.content || '').trim();
+        const question = await prisma.question.create({
           data: {
             paperId,
-            provider: provider.name,
-            model: provider.model,
-            inputTokens: result.usage.inputTokens,
-            outputTokens: result.usage.outputTokens,
-            latencyMs: result.usage.latencyMs || execResult.telemetry.durationMs,
-            estimatedCost: cost,
-            success: true,
+            numberRaw: numberText,
+            numberNormalized: numberText,
+            stemText: contentText.replace(/\$[^$]*\$/g, '').trim(),
+            stemLatex: contentText,
+            questionType: String(q.type || '其他').trim() || '其他',
+            sourceExam: paper.sourceExam,
+            sourceYear: paper.sourceYear,
           },
         });
+
+        const kpName = String(q.knowledgePoint || '未分类').trim() || '未分类';
+        const existingKp = await prisma.knowledgePoint.findFirst({
+          where: { name: kpName, parentId: null },
+        });
+        const kp =
+          existingKp ||
+          (await prisma.knowledgePoint.create({
+            data: { name: kpName },
+          }));
+
+        await prisma.questionKnowledgePoint.create({
+          data: {
+            questionId: question.id,
+            knowledgePointId: kp.id,
+          },
+        });
+        questionsSaved += 1;
+      }
+
+      await prisma.recognitionLog.create({
+        data: {
+          paperId,
+          provider: provider.name,
+          model: provider.model,
+          inputTokens: result.usage.inputTokens,
+          outputTokens: result.usage.outputTokens,
+          latencyMs: result.usage.latencyMs || execResult.telemetry.durationMs,
+          estimatedCost: cost,
+          success: true,
+        },
       });
 
       success = true;
@@ -224,7 +224,17 @@ papersRouter.post(
       if (String(error?.message || '').includes('STORAGE_UNAVAILABLE')) {
         return fail(res, 503, 'storage is unavailable. please check MinIO/S3 config.', 'STORAGE_UNAVAILABLE');
       }
-      const mapped = error?.mapped || mapProviderError(error);
+      const isProviderPhaseError = Boolean(error?.mapped);
+      const mapped = isProviderPhaseError
+        ? error.mapped
+        : {
+            status: 500,
+            errorCode: 'RECOGNIZE_PERSIST_FAILED' as const,
+            category: 'unknown' as const,
+            upstreamStatus: null,
+            message: 'Recognition succeeded but persistence failed.',
+            retryable: false,
+          };
       const telemetry = error?.telemetry || {
         requestId,
         operation: 'paper_recognize',
@@ -235,6 +245,11 @@ papersRouter.post(
         errorCategory: mapped.category,
         upstreamStatus: mapped.upstreamStatus,
       };
+      console.error(
+        `[paper-recognize][request=${requestId}] fail phase=${isProviderPhaseError ? 'provider' : 'persist'} raw=${
+          String(error?.message || error).slice(0, 300)
+        }`,
+      );
       await prisma.recognitionLog.create({
         data: {
           paperId,
