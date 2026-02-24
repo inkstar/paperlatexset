@@ -162,6 +162,8 @@ LaTeX 导出可选参数（`POST /api/papersets/:id/export-latex`，JSON body）
 - `choiceGap`: 选择/填空留白（如 `2cm`）
 - `solutionGap`: 解答题留白（如 `6cm`）
 - `lineSpacing`: 行距倍率（`0.8` 到 `3`）
+- 前端会在本地缓存上述参数（`localStorage`），刷新页面后自动恢复最近一次配置。
+- 前端导出前会校验留白单位与行距范围，非法输入会直接提示并阻断请求。
 - 基于 token 角色验证 `/api/v1/authz/admin` 权限（admin=200，非 admin=403）
 可选参数：
 - `SMOKE_EXPECTED_ROLE=admin|teacher|viewer`：断言服务端映射角色。

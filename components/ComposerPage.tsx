@@ -55,6 +55,7 @@ const DEFAULT_QUERY: QueryState = {
 };
 
 const BASKET_POS_KEY = 'paper_basket_position_v1';
+const LATEX_EXPORT_OPTIONS_KEY = 'latex_export_options_v1';
 
 type BasketPosition = { x: number; y: number };
 
@@ -122,7 +123,21 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
   });
   const [selected, setSelected] = useState<Record<string, BankQuestionItem>>({});
   const [mobileBasketOpen, setMobileBasketOpen] = useState(false);
-  const [latexExportOptions, setLatexExportOptions] = useState<LatexExportOptions>(DEFAULT_LATEX_EXPORT_OPTIONS);
+  const [latexExportOptions, setLatexExportOptions] = useState<LatexExportOptions>(() => {
+    const cached = localStorage.getItem(LATEX_EXPORT_OPTIONS_KEY);
+    if (!cached) return DEFAULT_LATEX_EXPORT_OPTIONS;
+    try {
+      const parsed = JSON.parse(cached) as Partial<LatexExportOptions>;
+      return {
+        headerTitle: parsed.headerTitle ?? DEFAULT_LATEX_EXPORT_OPTIONS.headerTitle,
+        choiceGap: parsed.choiceGap ?? DEFAULT_LATEX_EXPORT_OPTIONS.choiceGap,
+        solutionGap: parsed.solutionGap ?? DEFAULT_LATEX_EXPORT_OPTIONS.solutionGap,
+        lineSpacing: parsed.lineSpacing ?? DEFAULT_LATEX_EXPORT_OPTIONS.lineSpacing,
+      };
+    } catch {
+      return DEFAULT_LATEX_EXPORT_OPTIONS;
+    }
+  });
 
   const [basketPos, setBasketPos] = useState<BasketPosition>(() => {
     const cached = localStorage.getItem(BASKET_POS_KEY);
@@ -207,6 +222,10 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
   useEffect(() => {
     localStorage.setItem(BASKET_POS_KEY, JSON.stringify(basketPos));
   }, [basketPos]);
+
+  useEffect(() => {
+    localStorage.setItem(LATEX_EXPORT_OPTIONS_KEY, JSON.stringify(latexExportOptions));
+  }, [latexExportOptions]);
 
   const selectedList = useMemo(() => Object.values(selected), [selected]);
   const filterOptions = useMemo(() => {
@@ -302,10 +321,30 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
     });
   }
 
+  function validateLatexExportOptions(): string | null {
+    const isGap = (v: string) => /^(\d+(\.\d+)?)(cm|mm|pt|in)$/.test(v.trim());
+    if (!isGap(latexExportOptions.choiceGap)) return '选择/填空留白格式不合法，请使用 2cm 这类单位值。';
+    if (!isGap(latexExportOptions.solutionGap)) return '解答题留白格式不合法，请使用 6cm 这类单位值。';
+
+    const spacing = Number(latexExportOptions.lineSpacing);
+    if (!Number.isFinite(spacing) || spacing < 0.8 || spacing > 3) {
+      return '行距应在 0.8 到 3 之间。';
+    }
+    return null;
+  }
+
   async function exportPaper(type: 'latex' | 'word') {
     if (selectedList.length === 0) {
       setError('请先选择题目');
       return;
+    }
+
+    if (type === 'latex') {
+      const validationError = validateLatexExportOptions();
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
     }
 
     try {
@@ -582,7 +621,7 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
             <div className="mb-2 flex items-center justify-between">
               <div className="text-xs font-medium text-slate-600">导出格式设置（LaTeX）</div>
               <button
-                onClick={() => setLatexExportOptions(DEFAULT_LATEX_EXPORT_OPTIONS)}
+                onClick={() => setLatexExportOptions({ ...DEFAULT_LATEX_EXPORT_OPTIONS })}
                 className="rounded border border-slate-300 px-2 py-0.5 text-[11px] text-slate-600"
               >
                 恢复默认
@@ -646,7 +685,7 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
               <div className="mb-2 flex items-center justify-between">
                 <div className="text-xs font-medium text-slate-600">导出格式设置（LaTeX）</div>
                 <button
-                  onClick={() => setLatexExportOptions(DEFAULT_LATEX_EXPORT_OPTIONS)}
+                  onClick={() => setLatexExportOptions({ ...DEFAULT_LATEX_EXPORT_OPTIONS })}
                   className="rounded border border-slate-300 px-2 py-0.5 text-[11px] text-slate-600"
                 >
                   恢复默认
