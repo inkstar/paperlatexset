@@ -8,6 +8,22 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 12:16] Phase 4.27 前端导出参数接入（组卷页可调留白/标题/行距）
+- 目标
+  - 将后端 LaTeX 导出参数能力接入组卷页，支持在导出前调整标题、题后留白与行距。
+- 改动文件
+  - `components/ComposerPage.tsx`
+  - `PLAN.md`
+- 验收标准
+  - 试卷篮（桌面/移动）显示“导出格式设置（LaTeX）”。
+  - 导出 LaTeX 时向 `/api/papersets/:id/export-latex` 传递 `headerTitle/choiceGap/solutionGap/lineSpacing`。
+  - 导出 Word 保持原行为，不受该参数影响。
+- 风险与回滚
+  - 风险：用户输入非法参数可能导致后端回退默认值，造成“设置未生效”感知。
+  - 回滚：前端隐藏设置区，继续走后端默认参数。
+- 发布状态
+  - 已提交并推送（commit hash 见本阶段提交）。
+
 ### [UTC+8 2026-02-24 12:12] Phase 4.26 发布状态补全（Phase 4.24 / 4.25 hash）
 - 目标
   - 延续发布状态标准化，补全最新两个阶段的 commit hash。

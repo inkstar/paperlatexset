@@ -13,6 +13,13 @@ type QueryState = {
   sourceYear: string;
 };
 
+type LatexExportOptions = {
+  headerTitle: string;
+  choiceGap: string;
+  solutionGap: string;
+  lineSpacing: string;
+};
+
 type ApiResponse = {
   data: BankQuestionItem[];
   meta: { page: number; pageSize: number; total: number; totalPages: number };
@@ -108,6 +115,12 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
   });
   const [selected, setSelected] = useState<Record<string, BankQuestionItem>>({});
   const [mobileBasketOpen, setMobileBasketOpen] = useState(false);
+  const [latexExportOptions, setLatexExportOptions] = useState<LatexExportOptions>({
+    headerTitle: '',
+    choiceGap: '2cm',
+    solutionGap: '6cm',
+    lineSpacing: '1.15',
+  });
 
   const [basketPos, setBasketPos] = useState<BasketPosition>(() => {
     const cached = localStorage.getItem(BASKET_POS_KEY);
@@ -320,9 +333,20 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
         throw createClientError(batchJson.error || '保存组卷失败', batchJson.errorCode || `HTTP_${batchRes.status}`);
       }
 
+      const exportPayload =
+        type === 'latex'
+          ? {
+              headerTitle: latexExportOptions.headerTitle.trim() || undefined,
+              choiceGap: latexExportOptions.choiceGap.trim() || undefined,
+              solutionGap: latexExportOptions.solutionGap.trim() || undefined,
+              lineSpacing: Number(latexExportOptions.lineSpacing || 1.15),
+            }
+          : undefined;
+
       const exportRes = await fetch(`/api/papersets/${paperSetId}/export-${type}`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: { ...(type === 'latex' ? { 'Content-Type': 'application/json' } : {}), ...getAuthHeaders() },
+        body: type === 'latex' ? JSON.stringify(exportPayload) : undefined,
       });
       if (!exportRes.ok) {
         const errJson = await exportRes.json();
@@ -552,6 +576,35 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
           ))}
         </div>
         <div className="px-3 py-2 border-t">
+          <div className="mb-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
+            <div className="mb-2 text-xs font-medium text-slate-600">导出格式设置（LaTeX）</div>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                value={latexExportOptions.choiceGap}
+                onChange={(e) => setLatexExportOptions((s) => ({ ...s, choiceGap: e.target.value }))}
+                className="rounded border px-2 py-1 text-xs"
+                placeholder="选择/填空留白 2cm"
+              />
+              <input
+                value={latexExportOptions.solutionGap}
+                onChange={(e) => setLatexExportOptions((s) => ({ ...s, solutionGap: e.target.value }))}
+                className="rounded border px-2 py-1 text-xs"
+                placeholder="解答留白 6cm"
+              />
+              <input
+                value={latexExportOptions.lineSpacing}
+                onChange={(e) => setLatexExportOptions((s) => ({ ...s, lineSpacing: e.target.value }))}
+                className="rounded border px-2 py-1 text-xs"
+                placeholder="行距 1.15"
+              />
+              <input
+                value={latexExportOptions.headerTitle}
+                onChange={(e) => setLatexExportOptions((s) => ({ ...s, headerTitle: e.target.value }))}
+                className="rounded border px-2 py-1 text-xs"
+                placeholder="标题（可空）"
+              />
+            </div>
+          </div>
           <div className="text-xs text-gray-500 mb-2">知识点统计</div>
           <div className="max-h-20 overflow-auto space-y-1">
             {Object.entries(statsByKnowledgePoint).map(([k, v]) => (
@@ -577,6 +630,35 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
                   <button onClick={() => toggleSelect(q)} className="text-red-600 mt-1">移除</button>
                 </div>
               ))}
+            </div>
+            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2">
+              <div className="mb-2 text-xs font-medium text-slate-600">导出格式设置（LaTeX）</div>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  value={latexExportOptions.choiceGap}
+                  onChange={(e) => setLatexExportOptions((s) => ({ ...s, choiceGap: e.target.value }))}
+                  className="rounded border px-2 py-1 text-xs"
+                  placeholder="选择/填空留白"
+                />
+                <input
+                  value={latexExportOptions.solutionGap}
+                  onChange={(e) => setLatexExportOptions((s) => ({ ...s, solutionGap: e.target.value }))}
+                  className="rounded border px-2 py-1 text-xs"
+                  placeholder="解答留白"
+                />
+                <input
+                  value={latexExportOptions.lineSpacing}
+                  onChange={(e) => setLatexExportOptions((s) => ({ ...s, lineSpacing: e.target.value }))}
+                  className="rounded border px-2 py-1 text-xs"
+                  placeholder="行距"
+                />
+                <input
+                  value={latexExportOptions.headerTitle}
+                  onChange={(e) => setLatexExportOptions((s) => ({ ...s, headerTitle: e.target.value }))}
+                  className="rounded border px-2 py-1 text-xs"
+                  placeholder="标题（可空）"
+                />
+              </div>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button onClick={() => exportPaper('latex')} className="px-3 py-2 bg-blue-600 text-white rounded">导出LaTeX</button>
