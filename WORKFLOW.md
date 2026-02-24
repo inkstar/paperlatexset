@@ -59,3 +59,40 @@
 
 - `test_image/`、`test_output/` 默认不自动纳入提交。
 - 仅在该阶段明确需要沉淀样例或产物时才提交。
+
+## Git 写操作三层防御（强制）
+
+### 第一层：行为约束（预防并发）
+
+1. 同一仓库内禁止并行执行任何 git 命令。
+2. `commit/push/pull/merge/rebase` 执行期间，不开启新终端执行 git。
+3. git 写操作必须严格串行：
+   - `status -> add -> commit -> push`
+
+### 第二层：锁检测与自愈（自动清理）
+
+在任何 git 写操作前，先检查：
+
+```bash
+ps aux | egrep '[g]it|[s]sh|[g]pg'
+find .git -name '*.lock'
+```
+
+处理规则：
+
+- 若存在活跃 git 进程：等待其结束，不并发执行下一条 git 写命令。
+- 若无活跃进程但有 lock 残留：确认后删除 lock，再继续写操作。
+
+### 第三层：系统级互斥（终极稳定）
+
+所有 git 写操作优先使用互斥锁封装执行（推荐脚本）：
+
+```bash
+bash scripts/git-write-guard.sh commit -m "feat(...)"
+bash scripts/git-write-guard.sh push origin main
+```
+
+说明：
+
+- 脚本会自动做进程检查、残留 lock 清理、`flock` 互斥串行。
+- 这一步可避免多会话/自动化任务同时触发 git 写操作。

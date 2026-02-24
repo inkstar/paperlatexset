@@ -14,6 +14,22 @@
 - 你需要提供什么：优先查看 `Need.md` 的 `P0` 勾选项
 - 当前执行阶段：`PLAN.md` 顶部最新条目（已进入 M3 第一步：鉴权与 API v1 入口）
 
+## Git 写操作防并发（推荐）
+
+为避免 `HEAD.lock` / `main.lock` 残留导致提交卡住，推荐用互斥脚本执行 git 写操作：
+
+```bash
+bash scripts/git-write-guard.sh status
+bash scripts/git-write-guard.sh add PLAN.md
+bash scripts/git-write-guard.sh commit -m "chore(phase-x.y): ..."
+bash scripts/git-write-guard.sh push origin main
+```
+
+脚本能力：
+- 自动串行化 git 写操作（优先 `flock`，缺失时自动回退 `mkdir` 原子锁）
+- 写前检查进程与 lock 残留
+- 无活跃 git 进程时自动清理 `.git/*.lock`
+
 ## 本地开发
 
 ### 1) 准备环境变量
