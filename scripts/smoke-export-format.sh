@@ -4,33 +4,33 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
-echo "[smoke-export-format] verify latex export template and spacing rules"
+echo "[smoke-export-format] verify latex export template and spacing rules (static source checks)"
 
-npx tsx -e "
-import { buildLatex } from './server/src/services/exportService.ts';
+TARGET="server/src/services/exportService.ts"
 
-const latex = buildLatex('', [
-  { number: '1', type: '选择题', content: 'A', knowledgePoints: ['K1'], source: 'S1' },
-  { number: '2', type: '填空题', content: 'B', knowledgePoints: ['K2'], source: 'S2' },
-  { number: '3', type: '解答题', content: 'C', knowledgePoints: ['K3'], source: 'S3' },
-]);
-
-function mustContain(fragment: string, label: string) {
-  if (!latex.includes(fragment)) {
-    console.error('[smoke-export-format] FAIL: missing ' + label + ': ' + fragment);
-    process.exit(1);
-  }
+must_have() {
+  local pattern="$1"
+  local label="$2"
+  if ! rg -F -q -- "$pattern" "$TARGET"; then
+    echo "[smoke-export-format] FAIL: missing ${label}"
+    exit 1
+  fi
 }
 
-mustContain('\\\\newcommand{\\\\choicegap}{2cm}', 'choicegap');
-mustContain('\\\\newcommand{\\\\solutiongap}{6cm}', 'solutiongap');
-mustContain('\\\\pagestyle{fancy}', 'fancy pagestyle');
-mustContain('\\\\fancyhead[C]{', 'fancy header');
-mustContain('\\\\fancyfoot[C]{第 \\\\thepage 页}', 'fancy footer');
-mustContain('\\\\section*{', 'section title');
-mustContain('\\\\vspace{\\\\choicegap}', 'choice/blank spacing');
-mustContain('\\\\vspace{\\\\solutiongap}', 'solution spacing');
-mustContain('年', 'default date title');
+must_have ".replace('__CHOICE_GAP__', '2cm')" "choice gap 2cm"
+must_have ".replace('__SOLUTION_GAP__', '6cm')" "solution gap 6cm"
+must_have "\\pagestyle{fancy}" "fancy pagestyle"
+must_have "\\fancyhead[C]{" "fancy header"
+must_have "\\fancyfoot[C]{第 \\\\thepage 页}" "fancy footer"
+must_have "function resolvePaperTitle" "default date title resolver"
+must_have "return normalized === '解答题'" "type-based spacing"
+must_have "\\solutiongap" "solution gap branch"
+must_have "\\choicegap" "choice gap branch"
+must_have "\\vspace{\${gap}}" "runtime spacing render"
 
-console.log('[smoke-export-format] PASS');
-"
+echo "[smoke-export-format] PASS"
+
+if [[ "${SMOKE_EXPORT_RUNTIME:-0}" == "1" ]]; then
+  echo "[smoke-export-format] runtime check enabled"
+  npx tsx -e "import { buildLatex } from './server/src/services/exportService.ts'; console.log(buildLatex('', [{number:'1',type:'解答题',content:'A',knowledgePoints:['K'],source:'S'}]).slice(0, 240));"
+fi

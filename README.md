@@ -147,10 +147,15 @@ SMOKE_BEARER_TOKEN='<your-access-token>' npm run smoke:auth
 npm run smoke:export:format
 ```
 会检查：
-- 默认日期标题是否生效（东八区）
+- 默认日期标题解析逻辑是否存在（东八区）
 - `choicegap=2cm`、`solutiongap=6cm`
 - `fancyhdr` 页眉页脚配置存在
-- 选择/填空与解答题留白规则是否同时存在
+- 题型留白分支是否存在（选择/填空 vs 解答）
+
+如需额外运行时检查（可能更慢）：
+```bash
+SMOKE_EXPORT_RUNTIME=1 npm run smoke:export:format
+```
 - 基于 token 角色验证 `/api/v1/authz/admin` 权限（admin=200，非 admin=403）
 可选参数：
 - `SMOKE_EXPECTED_ROLE=admin|teacher|viewer`：断言服务端映射角色。
