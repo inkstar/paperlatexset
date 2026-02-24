@@ -128,8 +128,33 @@ recognitionRouter.post(
       return fail(res, 400, msg, 'PROVIDER_NOT_CONFIGURED');
     }
 
+    const startedAt = Date.now();
     try {
+      console.log(
+        `[recognition][request=${requestId}] call provider provider=${provider.name} model=${provider.model} operation=parse_latex`,
+      );
       const result = await provider.parseLatex(latexCode);
+      console.log(
+        `[recognition][request=${requestId}] provider returned status=200 preview=${JSON.stringify(result.raw || {}).slice(0, 200)}`,
+      );
+      console.log(
+        `[recognition][request=${requestId}] parsed questions count=${result.questions.length}`,
+      );
+      await writeRecognitionEventLog({
+        requestId,
+        operation: 'parse_latex',
+        provider: provider.name,
+        model: provider.model,
+        success: true,
+        attempts: 1,
+        durationMs: Date.now() - startedAt,
+        upstreamStatus: 200,
+        fileCount: 0,
+        fileSizeBand: 'latex_text',
+        inputLength: latexCode.length,
+        errorCategory: null,
+        errorCode: null,
+      });
       return ok(res, { questions: result.questions, provider: provider.name, usage: result.usage });
     } catch (error: any) {
       const mapped = mapProviderError(error);

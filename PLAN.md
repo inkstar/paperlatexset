@@ -8,6 +8,23 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 12:44] Phase 4.30 parse-latex 识别日志补全（成功态可诊断）
+- 目标
+  - 补齐 `/api/parse-latex` 成功链路日志，统一到识别诊断闭环。
+  - 在日志中直接回答“何时调用、哪种模型、耗时多少、解析了几题”。
+- 改动文件
+  - `server/src/routes/recognition.ts`
+  - `PLAN.md`
+- 验收标准
+  - `parse-latex` 调用前打印 `provider/model/requestId`。
+  - 返回后打印 `status + 前200字符` 与 `题目数`。
+  - 成功态写入 `writeRecognitionEventLog`（含 requestId、operation、durationMs）。
+- 风险与回滚
+  - 风险：日志字段增加可能提升单次请求日志量。
+  - 回滚：保留关键字段，移除 preview 字段。
+- 发布状态
+  - 已提交并推送（commit hash 见本阶段提交）。
+
 ### [UTC+8 2026-02-24 12:27] Phase 4.29 导出参数闭环增强（前端校验 + 本地持久化）
 - 目标
   - 在导出前拦截非法 LaTeX 参数，避免提交后端才失败。
