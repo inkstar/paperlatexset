@@ -8,6 +8,35 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 09:00] Phase 4.11 组卷页可用性增强（公式渲染 + 交互筛选 + 导出稳定）
+- 目标
+  - 题库组卷页支持题干 LaTeX 公式渲染，减少 `\frac`、`\sin` 等原始字符串阅读成本。
+  - 优化筛选与题目列表交互：可视化筛选状态、快捷标签筛选、选中高亮、就地清空 token。
+  - 修复后端导出与重识别稳定性问题：中文文件名导出头、重识别外键阻塞、模板统一与提示词统一。
+- 改动文件
+  - `components/MathText.tsx`
+  - `components/ComposerPage.tsx`
+  - `shared/recognitionConfig.ts`
+  - `constants.ts`
+  - `server/src/services/prompts.ts`
+  - `server/src/services/exportService.ts`
+  - `server/src/routes/paperSets.ts`
+  - `server/src/routes/papers.ts`
+  - `tsconfig.server.json`
+  - `PLAN.md`
+- 验收标准
+  - 组卷页题干与试卷篮支持 LaTeX 公式渲染，兼容 `$...$`、`$$...$$`、`\(...\)`、`\[...\]`。
+  - 筛选区支持 datalist 候选、快捷标签筛选、清空筛选，题目选中态可视化。
+  - 错误提示区支持“一键清空本地 token”。
+  - 后端导出 LaTeX 使用 `PREAMBLE_TEMPLATE`，并修复 `Content-Disposition` 中文文件名报错。
+  - 重识别流程可先清理 `paperSetItem`，避免 `RECOGNIZE_PERSIST_FAILED`（外键阻塞场景）。
+  - 识别提示词与 schema 前后端共享统一配置。
+- 风险与回滚
+  - 风险：渲染组件引入 KaTeX CDN，弱网下首次渲染会回退为纯文本。
+  - 回滚：可退回纯文本展示逻辑；后端导出/识别修复可按文件独立回退。
+- 发布状态
+  - 本条对应提交已按 `feat(phase-4.11)` 推送到 `origin/main`（见该提交 hash）。
+
 ### [UTC+8 2026-02-24 08:54] Phase 4.10 项目执行规范落盘与持续同步
 - 目标
   - 新增独立执行规范文档，固化“每阶段更新 PLAN + commit + push”。

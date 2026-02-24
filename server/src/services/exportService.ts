@@ -1,4 +1,5 @@
 import { Document, Packer, Paragraph, TextRun } from 'docx';
+import { PREAMBLE_TEMPLATE } from '../../../constants';
 
 type ExportQuestion = {
   number: string;
@@ -9,14 +10,14 @@ type ExportQuestion = {
 };
 
 export function buildLatex(title: string, questions: ExportQuestion[]) {
-  const preamble = `\\documentclass[11pt,a4paper]{article}
-\\usepackage[UTF8]{ctex}
-\\usepackage{amsmath,amssymb}
-\\usepackage{enumitem}
-\\begin{document}
-\\section*{${title}}
-\\begin{enumerate}[label=\\arabic*.]
-`;
+  const preamble = PREAMBLE_TEMPLATE
+    .replace('__CHOICE_GAP__', '2cm')
+    .replace('__SOLUTION_GAP__', '4cm')
+    .replace('__LINE_SPACING__', '1.15')
+    .replace('__FANCY_HDR_CONFIG__', '')
+    .concat('\n\\begin{document}\n')
+    .concat(`\\section*{${title}}\n`)
+    .concat('\\begin{enumerate}[label=\\arabic*.]\n');
 
   const body = questions
     .map((q, idx) => {

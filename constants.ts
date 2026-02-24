@@ -1,5 +1,8 @@
 
-import { Type } from "@google/genai";
+import {
+  UNIFIED_QUESTION_SCHEMA,
+  UNIFIED_SYSTEM_INSTRUCTION,
+} from "./shared/recognitionConfig";
 
 export const PREAMBLE_TEMPLATE = `
 % !TEX program = xelatex
@@ -64,37 +67,6 @@ export const COMMON_KNOWLEDGE_POINTS = [
   "二项式定理"
 ];
 
-export const QUESTION_SCHEMA = {
-  type: Type.OBJECT,
-  properties: {
-    questions: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          number: { type: Type.STRING, description: "Question number seen in image" },
-          content: { type: Type.STRING, description: "LaTeX content of the question" },
-          knowledgePoint: { type: Type.STRING, description: "Predicted math knowledge point" },
-          type: { type: Type.STRING, description: "Type: 选择题, 填空题, or 解答题" }
-        },
-        required: ["number", "content", "knowledgePoint", "type"]
-      }
-    }
-  },
-  required: ["questions"]
-};
+export const QUESTION_SCHEMA = UNIFIED_QUESTION_SCHEMA;
 
-export const SYSTEM_INSTRUCTION = `
-You are an expert LaTeX typesetter and OCR specialist. 
-Extract questions from images/PDFs and return them as structured JSON.
-
-MANDATORY LaTeX FORMATTING RULES:
-1. **NO \\n ESCAPE**: Use "\\\\" for explicit line breaks.
-2. **Fill-in-the-blanks**: Use "$\\fillin$".
-3. **Parallel Symbol**: Use \\mathbin{/\\!/}.
-4. **Parentheses**: Use (\\qquad) for choice answer placeholders.
-5. **Vectors**: Use \\overrightarrow{AB}.
-6. **Mathbf**: Use \\mathbf.
-7. **Phi Symbol**: Use \\varphi.
-8. **Circled Numbers**: Convert ①, ② to \\textcircled{\\scriptsize{1}}, \\textcircled{\\scriptsize{2}}.
-`;
+export const SYSTEM_INSTRUCTION = UNIFIED_SYSTEM_INSTRUCTION;

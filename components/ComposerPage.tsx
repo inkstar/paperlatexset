@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BankQuestionItem } from '../types';
 import { Download, FileText, Layers, MinusCircle, PackageOpen, PlusSquare, Trash2 } from 'lucide-react';
-import { getAuthHeaders } from '../services/authClient';
+import { AUTH_BEARER_STORAGE_KEY, getAuthHeaders, setAuthClientConfig } from '../services/authClient';
+import { MathText } from './MathText';
 
 type QueryState = {
   page: number;
@@ -130,6 +131,28 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
   }, [basketPos]);
 
   const selectedList = useMemo(() => Object.values(selected), [selected]);
+  const filterOptions = useMemo(() => {
+    const knowledgePointSet = new Set<string>();
+    const typeSet = new Set<string>();
+    const sourceSet = new Set<string>();
+
+    for (const item of items) {
+      item.knowledgePoints.forEach((kp) => {
+        const v = String(kp || '').trim();
+        if (v) knowledgePointSet.add(v);
+      });
+      const type = String(item.type || '').trim();
+      if (type) typeSet.add(type);
+      const source = String(item.source || '').trim();
+      if (source) sourceSet.add(source);
+    }
+
+    return {
+      knowledgePoints: Array.from(knowledgePointSet).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN')),
+      types: Array.from(typeSet).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN')),
+      sources: Array.from(sourceSet).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN')),
+    };
+  }, [items]);
   const statsByKnowledgePoint = useMemo(() => {
     const map: Record<string, number> = {};
     for (const q of selectedList) {
@@ -139,6 +162,17 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
     }
     return map;
   }, [selectedList]);
+  const activeFilterCount = useMemo(() => {
+    return [query.knowledgePoint, query.type, query.sourceExam, query.sourceYear].filter((v) => v.trim() !== '').length;
+  }, [query.knowledgePoint, query.sourceExam, query.sourceYear, query.type]);
+
+  function applyQuickFilter(key: 'knowledgePoint' | 'type' | 'sourceExam', value: string) {
+    setQuery((prev) => ({
+      ...prev,
+      page: 1,
+      [key]: prev[key] === value ? '' : value,
+    }));
+  }
 
   function toggleSelect(question: BankQuestionItem) {
     setSelected((prev) => {
@@ -277,55 +311,150 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
     dragRef.current.dragging = false;
   }
 
+  function clearStoredToken() {
+    localStorage.removeItem(AUTH_BEARER_STORAGE_KEY);
+    setAuthClientConfig({ bearerToken: '' });
+    setError('已清空本地 token，可重试操作。');
+  }
+
   return (
     <div className="space-y-4">
-      <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
-          <input value={query.knowledgePoint} onChange={(e) => setQuery((q) => ({ ...q, page: 1, knowledgePoint: e.target.value }))} className="px-3 py-2 border rounded-lg text-sm" placeholder="知识点" />
-          <input value={query.type} onChange={(e) => setQuery((q) => ({ ...q, page: 1, type: e.target.value }))} className="px-3 py-2 border rounded-lg text-sm" placeholder="题型" />
-          <input value={query.sourceExam} onChange={(e) => setQuery((q) => ({ ...q, page: 1, sourceExam: e.target.value }))} className="px-3 py-2 border rounded-lg text-sm" placeholder="来源" />
-          <input value={query.sourceYear} onChange={(e) => setQuery((q) => ({ ...q, page: 1, sourceYear: e.target.value }))} className="px-3 py-2 border rounded-lg text-sm" placeholder="年份" />
-          <button onClick={selectCurrentPage} className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg flex items-center justify-center gap-1"><PlusSquare size={14} />当前页全选</button>
-          <button onClick={selectAllResults} className="px-3 py-2 bg-indigo-600 text-white text-sm rounded-lg flex items-center justify-center gap-1"><Layers size={14} />全部结果全选</button>
+      <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm">
+        <datalist id="composer-kp-options">
+          {filterOptions.knowledgePoints.map((v) => (
+            <option key={v} value={v} />
+          ))}
+        </datalist>
+        <datalist id="composer-type-options">
+          {filterOptions.types.map((v) => (
+            <option key={v} value={v} />
+          ))}
+        </datalist>
+        <datalist id="composer-source-options">
+          {filterOptions.sources.map((v) => (
+            <option key={v} value={v} />
+          ))}
+        </datalist>
+        <div className="mb-3 flex items-center justify-between">
+          <div className="text-sm font-semibold text-slate-700">筛选器</div>
+          <div className="text-xs text-slate-500">已启用筛选 {activeFilterCount}</div>
         </div>
-        <div className="mt-2 flex gap-2">
-          <button onClick={clearCurrentPage} className="px-3 py-1.5 border rounded-lg text-sm">取消当前页</button>
-          <button onClick={() => setSelected({})} className="px-3 py-1.5 border rounded-lg text-sm text-red-600">清空试卷篮</button>
-          <span className="text-sm text-gray-500 self-center">已选 {selectedList.length} / 命中 {meta.total}</span>
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-6">
+          <input list="composer-kp-options" value={query.knowledgePoint} onChange={(e) => setQuery((q) => ({ ...q, page: 1, knowledgePoint: e.target.value }))} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="知识点" />
+          <input list="composer-type-options" value={query.type} onChange={(e) => setQuery((q) => ({ ...q, page: 1, type: e.target.value }))} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="题型" />
+          <input list="composer-source-options" value={query.sourceExam} onChange={(e) => setQuery((q) => ({ ...q, page: 1, sourceExam: e.target.value }))} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="来源" />
+          <input value={query.sourceYear} onChange={(e) => setQuery((q) => ({ ...q, page: 1, sourceYear: e.target.value }))} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="年份" />
+          <button onClick={selectCurrentPage} className="flex items-center justify-center gap-1 rounded-xl bg-blue-600 px-3 py-2 text-sm text-white transition hover:bg-blue-700"><PlusSquare size={14} />当前页全选</button>
+          <button onClick={selectAllResults} className="flex items-center justify-center gap-1 rounded-xl bg-indigo-600 px-3 py-2 text-sm text-white transition hover:bg-indigo-700"><Layers size={14} />全部结果全选</button>
+        </div>
+        <div className="mt-3 space-y-2">
+          {filterOptions.knowledgePoints.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {filterOptions.knowledgePoints.slice(0, 8).map((kp) => {
+                const active = query.knowledgePoint === kp;
+                return (
+                  <button
+                    key={kp}
+                    onClick={() => applyQuickFilter('knowledgePoint', kp)}
+                    className={`rounded-full border px-3 py-1 text-xs transition ${
+                      active
+                        ? 'border-blue-600 bg-blue-600 text-white'
+                        : 'border-slate-300 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-700'
+                    }`}
+                  >
+                    {kp}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            {filterOptions.types.slice(0, 5).map((t) => {
+              const active = query.type === t;
+              return (
+                <button
+                  key={t}
+                  onClick={() => applyQuickFilter('type', t)}
+                  className={`rounded-full border px-3 py-1 text-xs transition ${
+                    active
+                      ? 'border-emerald-600 bg-emerald-600 text-white'
+                      : 'border-slate-300 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700'
+                  }`}
+                >
+                  {t}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            onClick={() => setQuery((q) => ({ ...q, page: 1, knowledgePoint: '', type: '', sourceExam: '', sourceYear: '' }))}
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600"
+          >
+            清空筛选
+          </button>
+          <button onClick={clearCurrentPage} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600">取消当前页</button>
+          <button onClick={() => setSelected({})} className="rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600">清空试卷篮</button>
+          <span className="self-center text-sm text-slate-500">已选 {selectedList.length} / 命中 {meta.total}</span>
         </div>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b text-sm text-gray-600">题库列表</div>
-        {loading ? <div className="p-4 text-sm text-gray-500">加载中...</div> : null}
-        {error ? <div className="p-4 text-sm text-red-600">{error}</div> : null}
-        <div className="divide-y">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b px-4 py-3 text-sm">
+          <span className="font-medium text-slate-700">题库列表</span>
+          <span className="text-xs text-slate-500">共 {meta.total} 题</span>
+        </div>
+        {loading ? <div className="p-4 text-sm text-slate-500">加载中...</div> : null}
+        {error ? (
+          <div className="flex items-center justify-between gap-2 p-4 text-sm text-red-600">
+            <span>{error}</span>
+            <button onClick={clearStoredToken} className="shrink-0 rounded border border-red-200 px-2 py-1 text-xs text-red-700">
+              清空本地 token
+            </button>
+          </div>
+        ) : null}
+        <div className="divide-y divide-slate-100">
           {items.map((q) => {
             const checked = !!selected[q.id];
             return (
-              <div key={q.id} className="p-3 flex items-start gap-3 hover:bg-gray-50">
+              <div key={q.id} className={`flex items-start gap-3 p-3 transition ${checked ? 'bg-blue-50/70' : 'hover:bg-slate-50'}`}>
                 <input type="checkbox" checked={checked} onChange={() => toggleSelect(q)} className="mt-1" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs text-gray-500">#{q.number} · {q.type} · {q.source}</div>
-                  <div className="text-sm text-gray-800 break-all">{q.content}</div>
-                  <div className="mt-1 text-xs text-blue-600">{q.knowledgePoints.join(' / ')}</div>
+                  <div className="mb-1 flex flex-wrap items-center gap-2 text-xs">
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">#{q.number}</span>
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">{q.type}</span>
+                    <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">{q.source || '未标注来源'}</span>
+                  </div>
+                  <MathText text={q.content} className="break-words text-[15px] leading-7 text-slate-800" />
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {q.knowledgePoints.map((kp) => (
+                      <button
+                        key={`${q.id}-${kp}`}
+                        onClick={() => applyQuickFilter('knowledgePoint', kp)}
+                        className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs text-blue-700"
+                      >
+                        {kp}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
-        <div className="p-3 border-t flex items-center justify-between text-sm">
-          <span>第 {meta.page} / {Math.max(meta.totalPages, 1)} 页</span>
+        <div className="flex items-center justify-between border-t p-3 text-sm">
+          <span className="text-slate-600">第 {meta.page} / {Math.max(meta.totalPages, 1)} 页</span>
           <div className="flex gap-2">
             <button
               disabled={query.page <= 1}
               onClick={() => setQuery((q) => ({ ...q, page: Math.max(q.page - 1, 1) }))}
-              className="px-3 py-1 border rounded disabled:opacity-40"
+              className="rounded border border-slate-300 px-3 py-1 disabled:opacity-40"
             >上一页</button>
             <button
               disabled={query.page >= meta.totalPages}
               onClick={() => setQuery((q) => ({ ...q, page: q.page + 1 }))}
-              className="px-3 py-1 border rounded disabled:opacity-40"
+              className="rounded border border-slate-300 px-3 py-1 disabled:opacity-40"
             >下一页</button>
           </div>
         </div>
@@ -357,7 +486,7 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
           {selectedList.map((q) => (
             <div key={q.id} className="text-xs border rounded p-2">
               <div className="text-gray-500">#{q.number} · {q.type}</div>
-              <div className="line-clamp-2">{q.stemText || q.content}</div>
+              <MathText text={q.stemText || q.content} className="line-clamp-2 break-words" />
               <button onClick={() => toggleSelect(q)} className="mt-1 text-red-600 inline-flex items-center gap-1"><MinusCircle size={12} />移除</button>
             </div>
           ))}
@@ -384,7 +513,7 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
             <div className="space-y-2">
               {selectedList.map((q) => (
                 <div key={q.id} className="text-xs border rounded p-2">
-                  <div>{q.stemText || q.content}</div>
+                  <MathText text={q.stemText || q.content} className="break-words" />
                   <button onClick={() => toggleSelect(q)} className="text-red-600 mt-1">移除</button>
                 </div>
               ))}

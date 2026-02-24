@@ -15,6 +15,12 @@ import { asyncHandler, fail, ok } from '../utils/http';
 export const paperSetsRouter = Router();
 const execFileAsync = promisify(execFile);
 
+function toAttachmentHeader(filename: string): string {
+  const fallback = filename.replace(/[^\x20-\x7E]+/g, '_').replace(/["\\]/g, '_');
+  const encoded = encodeURIComponent(filename);
+  return `attachment; filename="${fallback}"; filename*=UTF-8''${encoded}`;
+}
+
 async function tryArchiveExport(paperSetId: string, type: 'pdf' | 'latex' | 'word', payload: Buffer | string, mimeType: string) {
   try {
     const buffer = Buffer.isBuffer(payload) ? payload : Buffer.from(payload, 'utf-8');
@@ -132,7 +138,7 @@ paperSetsRouter.post(
     await tryArchiveExport(paperSetId, 'pdf', pdfBuffer, 'application/pdf');
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${paperSet.name}.pdf"`);
+    res.setHeader('Content-Disposition', toAttachmentHeader(`${paperSet.name}.pdf`));
     return res.send(pdfBuffer);
   }),
 );
@@ -155,7 +161,7 @@ paperSetsRouter.post(
     await tryArchiveExport(paperSetId, 'latex', latex, 'text/plain');
 
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${paperSet.name}.tex"`);
+    res.setHeader('Content-Disposition', toAttachmentHeader(`${paperSet.name}.tex`));
     return res.send(latex);
   }),
 );
@@ -183,7 +189,7 @@ paperSetsRouter.post(
     );
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    res.setHeader('Content-Disposition', `attachment; filename="${paperSet.name}.docx"`);
+    res.setHeader('Content-Disposition', toAttachmentHeader(`${paperSet.name}.docx`));
     return res.send(docBuffer);
   }),
 );

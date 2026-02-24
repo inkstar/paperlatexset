@@ -164,6 +164,16 @@ papersRouter.post(
       );
       const cost = estimateCost(provider.name, result.usage.inputTokens, result.usage.outputTokens);
 
+      const existingQuestions = await prisma.question.findMany({
+        where: { paperId },
+        select: { id: true },
+      });
+      const existingQuestionIds = existingQuestions.map((q) => q.id);
+      if (existingQuestionIds.length > 0) {
+        await prisma.paperSetItem.deleteMany({
+          where: { questionId: { in: existingQuestionIds } },
+        });
+      }
       await prisma.question.deleteMany({ where: { paperId } });
       for (const q of result.questions) {
         const numberText = String(q.number || '').trim() || String(questionsSaved + 1);
