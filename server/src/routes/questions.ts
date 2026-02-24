@@ -8,6 +8,73 @@ import { asyncHandler, fail, ok } from '../utils/http';
 export const questionsRouter = Router();
 
 questionsRouter.get(
+  '/facets',
+  requireRole([UserRole.admin, UserRole.teacher, UserRole.viewer]),
+  asyncHandler(async (req, res) => {
+    const knowledgePoint = (req.query.knowledgePoint as string) || undefined;
+    const questionType = (req.query.type as string) || undefined;
+    const sourceExam = (req.query.sourceExam as string) || undefined;
+    const sourceYear = req.query.sourceYear ? Number(req.query.sourceYear) : undefined;
+
+    const where: any = {
+      ...(questionType ? { questionType } : {}),
+      ...(sourceExam ? { sourceExam: { contains: sourceExam } } : {}),
+      ...(sourceYear ? { sourceYear } : {}),
+      ...(knowledgePoint
+        ? {
+            knowledgePoints: {
+              some: {
+                knowledgePoint: {
+                  name: { contains: knowledgePoint },
+                },
+              },
+            },
+          }
+        : {}),
+    };
+
+    const rows = await prisma.question.findMany({
+      where,
+      select: {
+        questionType: true,
+        sourceExam: true,
+        sourceYear: true,
+        paper: { select: { title: true } },
+        knowledgePoints: { select: { knowledgePoint: { select: { name: true } } } },
+      },
+      orderBy: [{ sourceYear: 'desc' }, { numberNormalized: 'asc' }],
+    });
+
+    const knowledgePointSet = new Set<string>();
+    const typeSet = new Set<string>();
+    const sourceSet = new Set<string>();
+    const yearSet = new Set<number>();
+
+    for (const row of rows) {
+      const type = String(row.questionType || '').trim();
+      if (type) typeSet.add(type);
+
+      const source = String(row.sourceExam || row.paper?.title || '').trim();
+      if (source) sourceSet.add(source);
+
+      if (typeof row.sourceYear === 'number') yearSet.add(row.sourceYear);
+
+      for (const kp of row.knowledgePoints) {
+        const name = String(kp.knowledgePoint?.name || '').trim();
+        if (name) knowledgePointSet.add(name);
+      }
+    }
+
+    return ok(res, {
+      knowledgePoints: Array.from(knowledgePointSet).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN')),
+      types: Array.from(typeSet).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN')),
+      sources: Array.from(sourceSet).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN')),
+      years: Array.from(yearSet).sort((a, b) => b - a),
+    });
+  }),
+);
+
+questionsRouter.get(
   '/',
   requireRole([UserRole.admin, UserRole.teacher, UserRole.viewer]),
   asyncHandler(async (req, res) => {

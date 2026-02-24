@@ -8,6 +8,24 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 10:00] Phase 4.15 全量筛选维度接口接入（知识点/来源/题型/年份）
+- 目标
+  - 将组卷页筛选项从“当前页派生”升级为“后端全量维度”，提升筛选准确性与可用性。
+- 改动文件
+  - `server/src/routes/questions.ts`
+  - `components/ComposerPage.tsx`
+  - `PLAN.md`
+- 验收标准
+  - 新增 `GET /api/questions/facets`，返回 `knowledgePoints/types/sources/years`。
+  - 前端组卷页筛选输入优先使用 facets 数据源，不足时回退当前页数据。
+  - 年份筛选新增 datalist 候选。
+  - 保持现有 `/api/questions` 分页与筛选参数兼容。
+- 风险与回滚
+  - 风险：facets 接口在大数据量下查询成本上升。
+  - 回滚：前端退回当前页派生筛选，保留接口但不启用。
+- 发布状态
+  - 已提交并推送（commit hash 见本阶段提交）。
+
 ### [UTC+8 2026-02-24 09:54] Phase 4.14 题库编辑区增强（编辑即预览）
 - 目标
   - 在题目编辑表格中提供 LaTeX 即时预览，降低人工校对成本。

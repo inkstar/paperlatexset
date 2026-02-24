@@ -20,6 +20,17 @@ type ApiResponse = {
   errorCode?: string;
 };
 
+type FacetsResponse = {
+  data: {
+    knowledgePoints: string[];
+    types: string[];
+    sources: string[];
+    years: number[];
+  };
+  error: string | null;
+  errorCode?: string;
+};
+
 const DEFAULT_QUERY: QueryState = {
   page: 1,
   pageSize: 20,
@@ -69,6 +80,12 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
   const [meta, setMeta] = useState({ page: 1, pageSize: 20, total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
+  const [facets, setFacets] = useState<{ knowledgePoints: string[]; types: string[]; sources: string[]; years: number[] }>({
+    knowledgePoints: [],
+    types: [],
+    sources: [],
+    years: [],
+  });
   const [selected, setSelected] = useState<Record<string, BankQuestionItem>>({});
   const [mobileBasketOpen, setMobileBasketOpen] = useState(false);
 
@@ -122,9 +139,35 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
     }
   }
 
+  async function loadFacets() {
+    try {
+      const params = new URLSearchParams();
+      if (query.knowledgePoint) params.set('knowledgePoint', query.knowledgePoint);
+      if (query.type) params.set('type', query.type);
+      if (query.sourceExam) params.set('sourceExam', query.sourceExam);
+      if (query.sourceYear) params.set('sourceYear', query.sourceYear);
+
+      const res = await fetch(`/api/questions/facets?${params.toString()}`, { headers: getAuthHeaders() });
+      const json: FacetsResponse = await res.json();
+      if (!res.ok || json.error) return;
+      setFacets({
+        knowledgePoints: Array.isArray(json.data?.knowledgePoints) ? json.data.knowledgePoints : [],
+        types: Array.isArray(json.data?.types) ? json.data.types : [],
+        sources: Array.isArray(json.data?.sources) ? json.data.sources : [],
+        years: Array.isArray(json.data?.years) ? json.data.years : [],
+      });
+    } catch {
+      // Ignore facet loading errors to keep list usable.
+    }
+  }
+
   useEffect(() => {
     loadQuestions();
   }, [queryString]);
+
+  useEffect(() => {
+    loadFacets();
+  }, [query.knowledgePoint, query.type, query.sourceExam, query.sourceYear]);
 
   useEffect(() => {
     localStorage.setItem(BASKET_POS_KEY, JSON.stringify(basketPos));
@@ -132,27 +175,17 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
 
   const selectedList = useMemo(() => Object.values(selected), [selected]);
   const filterOptions = useMemo(() => {
-    const knowledgePointSet = new Set<string>();
-    const typeSet = new Set<string>();
-    const sourceSet = new Set<string>();
-
-    for (const item of items) {
-      item.knowledgePoints.forEach((kp) => {
-        const v = String(kp || '').trim();
-        if (v) knowledgePointSet.add(v);
-      });
-      const type = String(item.type || '').trim();
-      if (type) typeSet.add(type);
-      const source = String(item.source || '').trim();
-      if (source) sourceSet.add(source);
-    }
-
+    const knowledgePoints = facets.knowledgePoints.length > 0 ? facets.knowledgePoints : Array.from(new Set(items.flatMap((x) => x.knowledgePoints)));
+    const types = facets.types.length > 0 ? facets.types : Array.from(new Set(items.map((x) => x.type).filter(Boolean)));
+    const sources = facets.sources.length > 0 ? facets.sources : Array.from(new Set(items.map((x) => x.source).filter(Boolean)));
+    const years = facets.years.length > 0 ? facets.years.map((x) => String(x)) : [];
     return {
-      knowledgePoints: Array.from(knowledgePointSet).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN')),
-      types: Array.from(typeSet).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN')),
-      sources: Array.from(sourceSet).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN')),
+      knowledgePoints: knowledgePoints.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN')),
+      types: types.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN')),
+      sources: sources.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN')),
+      years,
     };
-  }, [items]);
+  }, [facets.knowledgePoints, facets.sources, facets.types, facets.years, items]);
   const statsByKnowledgePoint = useMemo(() => {
     const map: Record<string, number> = {};
     for (const q of selectedList) {
@@ -335,6 +368,11 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
             <option key={v} value={v} />
           ))}
         </datalist>
+        <datalist id="composer-year-options">
+          {filterOptions.years.map((v) => (
+            <option key={v} value={v} />
+          ))}
+        </datalist>
         <div className="mb-3 flex items-center justify-between">
           <div className="text-sm font-semibold text-slate-700">筛选器</div>
           <div className="text-xs text-slate-500">已启用筛选 {activeFilterCount}</div>
@@ -343,7 +381,7 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
           <input list="composer-kp-options" value={query.knowledgePoint} onChange={(e) => setQuery((q) => ({ ...q, page: 1, knowledgePoint: e.target.value }))} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="知识点" />
           <input list="composer-type-options" value={query.type} onChange={(e) => setQuery((q) => ({ ...q, page: 1, type: e.target.value }))} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="题型" />
           <input list="composer-source-options" value={query.sourceExam} onChange={(e) => setQuery((q) => ({ ...q, page: 1, sourceExam: e.target.value }))} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="来源" />
-          <input value={query.sourceYear} onChange={(e) => setQuery((q) => ({ ...q, page: 1, sourceYear: e.target.value }))} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="年份" />
+          <input list="composer-year-options" value={query.sourceYear} onChange={(e) => setQuery((q) => ({ ...q, page: 1, sourceYear: e.target.value }))} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="年份" />
           <button onClick={selectCurrentPage} className="flex items-center justify-center gap-1 rounded-xl bg-blue-600 px-3 py-2 text-sm text-white transition hover:bg-blue-700"><PlusSquare size={14} />当前页全选</button>
           <button onClick={selectAllResults} className="flex items-center justify-center gap-1 rounded-xl bg-indigo-600 px-3 py-2 text-sm text-white transition hover:bg-indigo-700"><Layers size={14} />全部结果全选</button>
         </div>
