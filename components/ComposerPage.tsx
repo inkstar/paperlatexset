@@ -56,6 +56,26 @@ function createClientError(message: string, code?: string): ClientError {
   return error;
 }
 
+function parseFilenameFromDisposition(contentDisposition: string | null, fallback: string): string {
+  if (!contentDisposition) return fallback;
+
+  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1]);
+    } catch {
+      // fallback to basic filename parsing
+    }
+  }
+
+  const basicMatch = contentDisposition.match(/filename=\"?([^\";]+)\"?/i);
+  if (basicMatch?.[1]) {
+    return basicMatch[1];
+  }
+
+  return fallback;
+}
+
 function getFriendlyErrorMessage(error: unknown) {
   const message = (error as Error | undefined)?.message || '';
   if (message.includes('did not match the expected pattern')) {
@@ -313,7 +333,9 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = type === 'latex' ? 'paper.tex' : 'paper.docx';
+      const fallbackName = type === 'latex' ? 'paper.tex' : 'paper.docx';
+      const disposition = exportRes.headers.get('Content-Disposition');
+      a.download = parseFilenameFromDisposition(disposition, fallbackName);
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

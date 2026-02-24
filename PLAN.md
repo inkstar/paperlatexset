@@ -8,6 +8,22 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 11:47] Phase 4.23 导出文件名对齐后端响应（支持中文）
+- 目标
+  - 前端导出下载名与后端 `Content-Disposition` 保持一致，避免固定 `paper.tex/docx` 覆盖语义文件名。
+- 改动文件
+  - `components/ComposerPage.tsx`
+  - `PLAN.md`
+- 验收标准
+  - 导出时优先解析 `filename*`（UTF-8）并回退 `filename`。
+  - 未提供响应头时仍使用 `paper.tex/docx` 兜底。
+  - 中文文件名可正确下载并保留扩展名。
+- 风险与回滚
+  - 风险：极个别浏览器对 `Content-Disposition` 解析差异可能导致回退到默认名。
+  - 回滚：保留 fallback，不阻断导出流程。
+- 发布状态
+  - 已提交并推送（commit hash 见本阶段提交）。
+
 ### [UTC+8 2026-02-24 10:45] Phase 4.22 发布状态标准化（补全近期阶段 hash）
 - 目标
   - 统一近期阶段发布状态格式，确保 `PLAN.md` 可直接映射到远端提交。
