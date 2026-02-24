@@ -8,6 +8,7 @@ import { UserRole } from '@prisma/client';
 import { prisma } from '../db/prisma';
 import { requireRole } from '../middleware/auth';
 import { buildLatex, buildWord } from '../services/exportService';
+import type { ExportLatexOptions } from '../services/exportService';
 import { ensureUser } from '../services/userService';
 import { uploadBuffer } from '../services/storageService';
 import { asyncHandler, fail, ok } from '../utils/http';
@@ -19,6 +20,26 @@ function toAttachmentHeader(filename: string): string {
   const fallback = filename.replace(/[^\x20-\x7E]+/g, '_').replace(/["\\]/g, '_');
   const encoded = encodeURIComponent(filename);
   return `attachment; filename="${fallback}"; filename*=UTF-8''${encoded}`;
+}
+
+function parseExportLatexOptions(input: any): ExportLatexOptions {
+  const out: ExportLatexOptions = {};
+  const isGap = (v: string) => /^(\d+(\.\d+)?)(cm|mm|pt|in)$/.test(v);
+
+  if (typeof input?.headerTitle === 'string' && input.headerTitle.trim()) {
+    out.headerTitle = input.headerTitle.trim();
+  }
+  if (typeof input?.choiceGap === 'string' && isGap(input.choiceGap.trim())) {
+    out.choiceGap = input.choiceGap.trim();
+  }
+  if (typeof input?.solutionGap === 'string' && isGap(input.solutionGap.trim())) {
+    out.solutionGap = input.solutionGap.trim();
+  }
+  if (typeof input?.lineSpacing === 'number' && input.lineSpacing >= 0.8 && input.lineSpacing <= 3) {
+    out.lineSpacing = Number(input.lineSpacing);
+  }
+
+  return out;
 }
 
 async function tryArchiveExport(paperSetId: string, type: 'pdf' | 'latex' | 'word', payload: Buffer | string, mimeType: string) {
@@ -122,7 +143,8 @@ paperSetsRouter.post(
     if (!paperSet) return fail(res, 404, 'Paper set not found');
 
     const questions = paperSet.items.map((x: any) => x.snapshot as any);
-    const latex = buildLatex(paperSet.name, questions);
+    const latexOptions = parseExportLatexOptions(req.body || {});
+    const latex = buildLatex(paperSet.name, questions, latexOptions);
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'paper-export-'));
     const texPath = path.join(tempDir, 'paper.tex');
     const outPath = path.join(tempDir, 'paper.pdf');

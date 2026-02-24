@@ -17,8 +17,10 @@ must_have() {
   fi
 }
 
-must_have ".replace('__CHOICE_GAP__', '2cm')" "choice gap 2cm"
-must_have ".replace('__SOLUTION_GAP__', '6cm')" "solution gap 6cm"
+must_have "const choiceGap = options.choiceGap || '2cm'" "choice gap default 2cm"
+must_have "const solutionGap = options.solutionGap || '6cm'" "solution gap default 6cm"
+must_have ".replace('__CHOICE_GAP__', choiceGap)" "choice gap wiring"
+must_have ".replace('__SOLUTION_GAP__', solutionGap)" "solution gap wiring"
 must_have "\\pagestyle{fancy}" "fancy pagestyle"
 must_have "\\fancyhead[C]{" "fancy header"
 must_have "\\fancyfoot[C]{第 \\\\thepage 页}" "fancy footer"

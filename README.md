@@ -156,6 +156,12 @@ npm run smoke:export:format
 ```bash
 SMOKE_EXPORT_RUNTIME=1 npm run smoke:export:format
 ```
+
+LaTeX 导出可选参数（`POST /api/papersets/:id/export-latex`，JSON body）：
+- `headerTitle`: 自定义页眉/标题文本
+- `choiceGap`: 选择/填空留白（如 `2cm`）
+- `solutionGap`: 解答题留白（如 `6cm`）
+- `lineSpacing`: 行距倍率（`0.8` 到 `3`）
 - 基于 token 角色验证 `/api/v1/authz/admin` 权限（admin=200，非 admin=403）
 可选参数：
 - `SMOKE_EXPECTED_ROLE=admin|teacher|viewer`：断言服务端映射角色。

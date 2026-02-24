@@ -8,6 +8,24 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 12:07] Phase 4.25 导出参数可配置化（留白/标题/行距）
+- 目标
+  - 为 LaTeX 导出增加可选格式参数，支持按场景调整页眉标题、题后留白与行距。
+- 改动文件
+  - `server/src/services/exportService.ts`
+  - `server/src/routes/paperSets.ts`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - `POST /api/papersets/:id/export-latex` 支持可选 body：`headerTitle/choiceGap/solutionGap/lineSpacing`。
+  - 参数未传时保持默认：`choiceGap=2cm`、`solutionGap=6cm`、`lineSpacing=1.15`、标题为既有规则。
+  - 参数校验安全：仅接受合法单位留白与可用行距区间。
+- 风险与回滚
+  - 风险：非法参数输入可能导致导出格式不符合预期。
+  - 回滚：忽略无效参数并回退默认值，不中断导出。
+- 发布状态
+  - 已提交并推送（commit hash 见本阶段提交）。
+
 ### [UTC+8 2026-02-24 12:02] Phase 4.24 发布状态补全（Phase 4.22 / 4.23 hash）
 - 目标
   - 补全近期阶段发布状态中的占位描述，统一为明确 commit hash。

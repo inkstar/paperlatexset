@@ -9,6 +9,13 @@ type ExportQuestion = {
   source?: string | null;
 };
 
+export type ExportLatexOptions = {
+  headerTitle?: string;
+  choiceGap?: string;
+  solutionGap?: string;
+  lineSpacing?: number;
+};
+
 function resolvePaperTitle(title: string): string {
   const parts = new Intl.DateTimeFormat('zh-CN', {
     timeZone: 'Asia/Shanghai',
@@ -38,12 +45,15 @@ function spacingByType(type: string): '\\choicegap' | '\\solutiongap' {
   return normalized === '解答题' ? '\\solutiongap' : '\\choicegap';
 }
 
-export function buildLatex(title: string, questions: ExportQuestion[]) {
-  const safeTitle = resolvePaperTitle(title);
+export function buildLatex(title: string, questions: ExportQuestion[], options: ExportLatexOptions = {}) {
+  const safeTitle = resolvePaperTitle(options.headerTitle || title);
+  const choiceGap = options.choiceGap || '2cm';
+  const solutionGap = options.solutionGap || '6cm';
+  const lineSpacing = typeof options.lineSpacing === 'number' ? options.lineSpacing : 1.15;
   const preamble = PREAMBLE_TEMPLATE
-    .replace('__CHOICE_GAP__', '2cm')
-    .replace('__SOLUTION_GAP__', '6cm')
-    .replace('__LINE_SPACING__', '1.15')
+    .replace('__CHOICE_GAP__', choiceGap)
+    .replace('__SOLUTION_GAP__', solutionGap)
+    .replace('__LINE_SPACING__', String(lineSpacing))
     .replace('__FANCY_HDR_CONFIG__', buildFancyHeaderConfig(safeTitle))
     .concat('\n\\begin{document}\n')
     .concat(`\\section*{${safeTitle}}\n`)
