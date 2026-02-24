@@ -3,6 +3,7 @@ import React, { useMemo, useState } from 'react';
 import { QuestionItem } from '../types';
 import { Edit3, Tag, Hash, ChevronDown, Calendar, CheckCheck, ListOrdered } from 'lucide-react';
 import { COMMON_KNOWLEDGE_POINTS } from '../constants';
+import { MathText } from './MathText';
 
 interface Props {
   questions: QuestionItem[];
@@ -151,12 +152,18 @@ export const QuestionTable: React.FC<Props> = ({ questions, onUpdate, onBatchUpd
                   />
                 </td>
                 <td className="px-4 py-3 align-top">
-                  <textarea
-                    rows={2}
-                    value={q.content}
-                    onChange={(e) => onUpdate(q.id, 'content', e.target.value)}
-                    className="w-full bg-transparent border-none focus:ring-1 focus:ring-blue-400 rounded px-2 py-1 text-sm font-mono text-gray-600 resize-none leading-relaxed transition-all"
-                  />
+                  <div className="space-y-2">
+                    <textarea
+                      rows={2}
+                      value={q.content}
+                      onChange={(e) => onUpdate(q.id, 'content', e.target.value)}
+                      className="w-full bg-transparent border-none focus:ring-1 focus:ring-blue-400 rounded px-2 py-1 text-sm font-mono text-gray-600 resize-none leading-relaxed transition-all"
+                    />
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                      <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">LaTeX 预览</div>
+                      <MathText text={q.content} className="break-words text-sm text-slate-700" />
+                    </div>
+                  </div>
                 </td>
               </tr>
             ))}
