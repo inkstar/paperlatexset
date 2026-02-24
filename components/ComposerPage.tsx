@@ -20,6 +20,13 @@ type LatexExportOptions = {
   lineSpacing: string;
 };
 
+const DEFAULT_LATEX_EXPORT_OPTIONS: LatexExportOptions = {
+  headerTitle: '',
+  choiceGap: '2cm',
+  solutionGap: '6cm',
+  lineSpacing: '1.15',
+};
+
 type ApiResponse = {
   data: BankQuestionItem[];
   meta: { page: number; pageSize: number; total: number; totalPages: number };
@@ -115,12 +122,7 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
   });
   const [selected, setSelected] = useState<Record<string, BankQuestionItem>>({});
   const [mobileBasketOpen, setMobileBasketOpen] = useState(false);
-  const [latexExportOptions, setLatexExportOptions] = useState<LatexExportOptions>({
-    headerTitle: '',
-    choiceGap: '2cm',
-    solutionGap: '6cm',
-    lineSpacing: '1.15',
-  });
+  const [latexExportOptions, setLatexExportOptions] = useState<LatexExportOptions>(DEFAULT_LATEX_EXPORT_OPTIONS);
 
   const [basketPos, setBasketPos] = useState<BasketPosition>(() => {
     const cached = localStorage.getItem(BASKET_POS_KEY);
@@ -577,7 +579,15 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
         </div>
         <div className="px-3 py-2 border-t">
           <div className="mb-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
-            <div className="mb-2 text-xs font-medium text-slate-600">导出格式设置（LaTeX）</div>
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-xs font-medium text-slate-600">导出格式设置（LaTeX）</div>
+              <button
+                onClick={() => setLatexExportOptions(DEFAULT_LATEX_EXPORT_OPTIONS)}
+                className="rounded border border-slate-300 px-2 py-0.5 text-[11px] text-slate-600"
+              >
+                恢复默认
+              </button>
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <input
                 value={latexExportOptions.choiceGap}
@@ -601,9 +611,10 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
                 value={latexExportOptions.headerTitle}
                 onChange={(e) => setLatexExportOptions((s) => ({ ...s, headerTitle: e.target.value }))}
                 className="rounded border px-2 py-1 text-xs"
-                placeholder="标题（可空）"
+                placeholder="标题（可空，默认当日日期）"
               />
             </div>
+            <div className="mt-1 text-[11px] text-slate-500">留白单位示例：`2cm`、`20mm`；行距建议 `1.0 - 1.5`。</div>
           </div>
           <div className="text-xs text-gray-500 mb-2">知识点统计</div>
           <div className="max-h-20 overflow-auto space-y-1">
@@ -632,7 +643,15 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
               ))}
             </div>
             <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2">
-              <div className="mb-2 text-xs font-medium text-slate-600">导出格式设置（LaTeX）</div>
+              <div className="mb-2 flex items-center justify-between">
+                <div className="text-xs font-medium text-slate-600">导出格式设置（LaTeX）</div>
+                <button
+                  onClick={() => setLatexExportOptions(DEFAULT_LATEX_EXPORT_OPTIONS)}
+                  className="rounded border border-slate-300 px-2 py-0.5 text-[11px] text-slate-600"
+                >
+                  恢复默认
+                </button>
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 <input
                   value={latexExportOptions.choiceGap}
@@ -655,10 +674,11 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({ onAuthRequired }) =>
                 <input
                   value={latexExportOptions.headerTitle}
                   onChange={(e) => setLatexExportOptions((s) => ({ ...s, headerTitle: e.target.value }))}
-                  className="rounded border px-2 py-1 text-xs"
-                  placeholder="标题（可空）"
-                />
+                className="rounded border px-2 py-1 text-xs"
+                placeholder="标题（可空，默认当日日期）"
+              />
               </div>
+              <div className="mt-1 text-[11px] text-slate-500">留白单位示例：`2cm`、`20mm`；行距建议 `1.0 - 1.5`。</div>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button onClick={() => exportPaper('latex')} className="px-3 py-2 bg-blue-600 text-white rounded">导出LaTeX</button>
