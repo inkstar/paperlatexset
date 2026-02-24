@@ -321,6 +321,12 @@ export default function App() {
     }
   };
 
+  const clearBearerToken = () => {
+    setAuthBearerToken('');
+    setCurrentAuthSummary('');
+    setAuthMessage('已清空本地 Bearer token，将回退为开发角色鉴权。');
+  };
+
   useEffect(() => {
     if (showAuthModal) {
       handleFetchAuthCapabilities();
@@ -803,7 +809,7 @@ export default function App() {
             />
             {authBearerToken && (
               <button
-                onClick={() => setAuthBearerToken('')}
+                onClick={clearBearerToken}
                 className="text-xs px-2 py-1 border border-gray-200 rounded bg-white hover:bg-gray-100"
                 title="清除 Bearer token"
               >
@@ -831,6 +837,13 @@ export default function App() {
             title="登录、获取token、校验当前身份"
           >
             <span>登录/鉴权</span>
+          </button>
+          <button
+            onClick={clearBearerToken}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-red-100"
+            title="清空本地 Bearer token"
+          >
+            <span>清空Token</span>
           </button>
           {currentAuthSummary && (
             <span className="hidden xl:inline text-xs text-gray-500 max-w-56 truncate" title={currentAuthSummary}>
