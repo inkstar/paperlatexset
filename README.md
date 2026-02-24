@@ -141,6 +141,16 @@ SMOKE_BEARER_TOKEN='<your-access-token>' npm run smoke:auth
 `smoke:auth` 会自动检查：
 - 无 token 时返回 `AUTH_REQUIRED`
 - 有 token 时 `/api/v1/me` 返回 `auth.mode=bearer`
+
+导出格式专项验证（无需启动后端）：
+```bash
+npm run smoke:export:format
+```
+会检查：
+- 默认日期标题是否生效（东八区）
+- `choicegap=2cm`、`solutiongap=6cm`
+- `fancyhdr` 页眉页脚配置存在
+- 选择/填空与解答题留白规则是否同时存在
 - 基于 token 角色验证 `/api/v1/authz/admin` 权限（admin=200，非 admin=403）
 可选参数：
 - `SMOKE_EXPECTED_ROLE=admin|teacher|viewer`：断言服务端映射角色。

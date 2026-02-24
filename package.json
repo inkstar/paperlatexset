@@ -18,6 +18,7 @@
     "smoke:compose": "bash scripts/smoke-compose.sh",
     "smoke:upload": "bash scripts/smoke-upload.sh",
     "smoke:recognition": "bash scripts/smoke-recognition.sh",
+    "smoke:export:format": "bash scripts/smoke-export-format.sh",
     "workflow:check": "bash scripts/pre-push-check.sh",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

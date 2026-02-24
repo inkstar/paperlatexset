@@ -8,6 +8,24 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 10:26] Phase 4.19 导出格式回归脚本（题型留白与标题规范）
+- 目标
+  - 为导出模板关键规范增加自动化回归，防止后续改动破坏题型留白和页眉页脚规则。
+- 改动文件
+  - `scripts/smoke-export-format.sh`
+  - `package.json`
+  - `README.md`
+  - `PLAN.md`
+- 验收标准
+  - 新增 `npm run smoke:export:format`。
+  - 脚本可检查默认日期标题、`choicegap/solutiongap`、`fancyhdr`、题型留白片段。
+  - README 提供该脚本的用途与检查项说明。
+- 风险与回滚
+  - 风险：字符串断言方式对模板文本细节较敏感。
+  - 回滚：将强匹配改为关键字段弱匹配，不移除脚本。
+- 发布状态
+  - 已提交并推送（commit hash 见本阶段提交）。
+
 ### [UTC+8 2026-02-24 10:20] Phase 4.18 计划可追溯性增强（发布状态补全 commit hash）
 - 目标
   - 将近期阶段的“发布状态”从描述性文本升级为可点击追溯的明确 commit hash。
