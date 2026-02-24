@@ -12,10 +12,13 @@ MANDATORY LaTeX FORMATTING RULES:
 7. Use \\mathbin{/\\!/} for parallel.
 8. Use \\overrightarrow{AB} for vectors, \\mathbf for bold math, and \\varphi for phi.
 9. Convert circled numbers like ① ② to \\textcircled{\\scriptsize{1}} \\textcircled{\\scriptsize{2}}.
+10. Never output illegal prefixes like /b or \\b.
+11. Fractions must use \\frac{...}{...}.
+12. For solution sub-questions (e.g. (1)(2), ①②), add explicit line breaks.
 `;
 
 export const UNIFIED_RECOGNIZE_PROMPT =
-  'Identify all questions in these files. For each question extract number, content in LaTeX, knowledgePoint and type.';
+  'Identify all questions in these files. For each question extract number, content in LaTeX, knowledgePoint and type. Do not output /b or \\b. Fractions must use \\frac.';
 
 export const buildUnifiedParseLatexPrompt = (latexCode: string): string => `
 Parse this LaTeX and extract question list as JSON array with fields number, content, knowledgePoint, type.

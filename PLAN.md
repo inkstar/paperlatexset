@@ -8,6 +8,27 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-24 09:30] Phase 4.12 LaTeX 规范清洗统一（参考规则落地）
+- 目标
+  - 将识别/导入后的 LaTeX 清洗规则统一为单一实现，减少非法前缀、分数写法和小问换行不一致。
+  - 前后端同时使用同一套规范，避免“前端修、后端脏”或“后端修、前端显示异常”。
+- 改动文件
+  - `shared/latexNormalizer.ts`
+  - `services/geminiService.ts`
+  - `server/src/routes/papers.ts`
+  - `shared/recognitionConfig.ts`
+  - `PLAN.md`
+- 验收标准
+  - `analyzeExam` 与 `parseLatexToQuestions` 统一走 `normalizeLatexContent`。
+  - 后端 `papers/:id/recognize` 入库前统一走 `normalizeLatexContent`。
+  - 清洗规则覆盖：控制字符清理、`/b`/`\\b` 前缀剔除、`//` 与 `\\parallel` 规范化、简单 `a/b` 转 `\\frac{a}{b}`、填空占位规范化、子问换行。
+  - 统一提示词中明确：禁止非法前缀、分数必须 `\\frac`、小问需换行。
+- 风险与回滚
+  - 风险：激进分数替换可能改写极少数非数学斜杠文本。
+  - 回滚：只回退 `normalizeFractions` 规则，保留其他稳定清洗项。
+- 发布状态
+  - 已提交并推送（commit hash 见本阶段提交）。
+
 ### [UTC+8 2026-02-24 09:00] Phase 4.11 组卷页可用性增强（公式渲染 + 交互筛选 + 导出稳定）
 - 目标
   - 题库组卷页支持题干 LaTeX 公式渲染，减少 `\frac`、`\sin` 等原始字符串阅读成本。

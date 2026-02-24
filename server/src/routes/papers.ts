@@ -13,6 +13,7 @@ import { getProvider, estimateCost, listProviders } from '../services/providerSe
 import { ensureUser } from '../services/userService';
 import { ensureBucket, getObjectBuffer, uploadBuffer } from '../services/storageService';
 import { asyncHandler, fail, ok } from '../utils/http';
+import { normalizeLatexContent } from '../../../shared/latexNormalizer';
 
 const require = createRequire(import.meta.url);
 const multer = require('multer') as typeof import('multer');
@@ -177,7 +178,7 @@ papersRouter.post(
       await prisma.question.deleteMany({ where: { paperId } });
       for (const q of result.questions) {
         const numberText = String(q.number || '').trim() || String(questionsSaved + 1);
-        const contentText = String(q.content || '').trim();
+        const contentText = normalizeLatexContent(String(q.content || '').trim(), String(q.type || '其他'));
         const question = await prisma.question.create({
           data: {
             paperId,

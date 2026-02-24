@@ -1,5 +1,6 @@
 import { UploadedFile, QuestionItem } from '../types';
 import { getAuthHeaders } from './authClient';
+import { normalizeLatexContent } from '../shared/latexNormalizer';
 
 export class ApiError extends Error {
   code?: string;
@@ -80,15 +81,7 @@ export async function analyzeExam(files: UploadedFile[], provider?: 'gemini' | '
   const todayStr = new Date().toISOString().split('T')[0];
 
   return data.questions.map((q, idx) => {
-    let cleanContent = q.content || '';
-    if (typeof cleanContent === 'string') {
-      cleanContent = cleanContent.replace(/\\n/g, '\\\\');
-      if (q.type === '填空题') {
-        cleanContent = cleanContent.replace(/_{3,}/g, '$\\fillin$');
-        cleanContent = cleanContent.replace(/（\s*）/g, '$\\fillin$');
-        cleanContent = cleanContent.replace(/(?<!\$)\\fillin(?!\$)/g, '$\\fillin$');
-      }
-    }
+    const cleanContent = normalizeLatexContent(q.content || '', q.type || '其他');
 
     return {
       id: `q-${idx}-${Date.now()}`,
@@ -108,7 +101,7 @@ export async function parseLatexToQuestions(latexCode: string, provider?: 'gemin
   return data.questions.map((q, idx) => ({
     id: `imported-${idx}-${Date.now()}`,
     number: q.number || `${idx + 1}`,
-    content: q.content || '',
+    content: normalizeLatexContent(q.content || '', q.type || '其他'),
     knowledgePoint: q.knowledgePoint || '未分类',
     source: q.source || todayStr,
     type: q.type || '其他',
