@@ -30,6 +30,12 @@ bash scripts/git-write-guard.sh push origin main
 - 写前检查进程与 lock 残留
 - 无活跃 git 进程时自动清理 `.git/*.lock`
 
+规范检查脚本：
+
+```bash
+npm run workflow:check -- "feat(phase-4.17): ..."
+```
+
 ## 本地开发
 
 ### 1) 准备环境变量

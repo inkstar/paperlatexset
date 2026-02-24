@@ -96,3 +96,17 @@ bash scripts/git-write-guard.sh push origin main
 
 - 脚本会自动做进程检查、残留 lock 清理、`flock` 互斥串行。
 - 这一步可避免多会话/自动化任务同时触发 git 写操作。
+
+## 规范执行脚本（推荐）
+
+在阶段提交前执行：
+
+```bash
+bash scripts/pre-push-check.sh "feat(phase-4.17): ..."
+```
+
+检查项：
+
+- 当前阶段是否已更新并暂存 `PLAN.md`
+- 是否存在非白名单未跟踪文件（默认允许 `test_image/`、`test_output/`）
+- 提交信息是否符合 `feat|fix|chore(phase-x.y)` 模板
