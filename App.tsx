@@ -863,9 +863,9 @@ export default function App() {
       </header>
 
       {activeView === 'extract' ? (
-      <main className="flex-1 max-w-[1600px] w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden">
+      <main className="flex-1 max-w-[1600px] w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden lg:h-[calc(100vh-7.5rem)]">
         {/* Left Column */}
-        <div className="lg:col-span-3 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
+        <div className="lg:col-span-3 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar lg:h-full">
           <div onDrop={(e) => { e.preventDefault(); processFiles(Array.from(e.dataTransfer.files)); }} onDragOver={(e) => e.preventDefault()} className="border-2 border-dashed border-gray-300 rounded-xl p-6 bg-white hover:border-blue-500 transition-all text-center group shadow-sm">
             <input type="file" multiple accept="image/*,application/pdf" onChange={(e) => e.target.files && processFiles(Array.from(e.target.files))} className="hidden" id="f-up" />
             <label htmlFor="f-up" className="cursor-pointer flex flex-col items-center gap-2">
@@ -997,7 +997,7 @@ export default function App() {
         </div>
 
         {/* Middle Column */}
-        <div className="lg:col-span-5 h-[calc(100vh-10rem)]">
+        <div className="lg:col-span-5 lg:h-full min-h-[520px]">
           {questions.length > 0 ? (
             <QuestionTable questions={questions} onUpdate={handleUpdateQuestion} onBatchUpdate={handleBatchUpdate} />
           ) : (
@@ -1016,7 +1016,7 @@ export default function App() {
         </div>
 
         {/* Right Column */}
-        <div className="lg:col-span-4 h-[calc(100vh-10rem)]">
+        <div className="lg:col-span-4 lg:h-full min-h-[520px]">
           {generatedLatex ? (
             <LatexOutput latexCode={generatedLatex} />
           ) : (
