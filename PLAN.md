@@ -8,6 +8,23 @@
 
 ## 计划记录
 
+### [UTC+8 2026-02-25 11:02] Phase 4.33 提示词融合增强（保留原有 + 注入 XeLaTeX 安全附录）
+- 目标
+  - 在不替换原提示词的前提下，融合严格的 XeLaTeX 安全规则与自检机制。
+  - 统一前后端识别/解析提示词行为，降低非法 LaTeX 输出概率。
+- 改动文件
+  - `shared/recognitionConfig.ts`
+  - `PLAN.md`
+- 验收标准
+  - `UNIFIED_SYSTEM_INSTRUCTION` 保留原有规则并追加安全附录。
+  - `UNIFIED_RECOGNIZE_PROMPT` 与 `buildUnifiedParseLatexPrompt` 均显式要求“自检并自动修复后输出 JSON”。
+  - 不改变现有 schema 与接口结构。
+- 风险与回滚
+  - 风险：提示词变长可能导致响应耗时小幅上升。
+  - 回滚：保留系统附录，缩短识别/解析子提示词附加文本。
+- 发布状态
+  - 已提交并推送（commit hash 见本阶段提交）。
+
 ### [UTC+8 2026-02-25 00:05] Phase 4.32 识别应急兜底（后端不可达时前端直连 Gemini）
 - 目标
   - 在后端 `3100` 不可达时，仍可在网页侧完成题目识别与 LaTeX 导入解析。
