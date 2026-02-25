@@ -43,6 +43,9 @@ npm run workflow:check -- "feat(phase-4.17): ..."
 前端：
 
 - `/.env.local`
+- 可选应急识别兜底：
+  - `VITE_GEMINI_API_KEY=`（后端不可达时，前端直连 Gemini）
+  - `VITE_GEMINI_MODEL=gemini-2.5-flash`（可选，默认该模型）
 
 后端：
 
@@ -96,12 +99,18 @@ npm run dev
 - 后端：`http://localhost:3100`
 
 说明：后端启动脚本已固定使用 `tsconfig.server.json`，避免前端 `tsconfig` 选项影响服务启动稳定性。
+当后端暂不可达时，前端识别/LaTeX 导入会尝试自动回退到浏览器端 Gemini（需配置 `VITE_GEMINI_API_KEY`）。
 
 前端开发鉴权面板（右上角）：
 - 可直接切换 `admin / teacher / viewer`（无 Bearer token 时使用）。
 - 可填入 Bearer token（填入后优先使用 Bearer）。
 - 配置会保存在浏览器 `localStorage`，用于本地联调。
 - 组卷页如果返回 `AUTH_REQUIRED/AUTH_FORBIDDEN`，会自动弹出“登录/鉴权”弹窗。
+
+组卷页筛选（`题库组卷`）：
+- 支持按 `知识点 / 题型 / 来源 / 年份` 下拉筛选。
+- 顶部会显示已启用筛选标签，可逐个移除单项筛选。
+- 快捷筛选按钮支持知识点、题型、来源、年份，点击可切换启用/取消。
 
 ### 5) 一键 smoke 验证（可选）
 
